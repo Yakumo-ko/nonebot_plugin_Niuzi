@@ -4,5 +4,5 @@ class NiuZi(BaseModel):
     owner: str
     name: str
     length: float
-    sex: str
+    sex: int
    

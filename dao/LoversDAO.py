@@ -6,6 +6,8 @@ from ..config import Config
 from ..entiry.Lovers import Lovers
 from ..utils.Mysql import Sql
 
+
+
 class LoversDAO:
     # sql table name
     __LOVERS: str = "lovers"
