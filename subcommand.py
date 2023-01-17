@@ -4,7 +4,7 @@ from nonebot.matcher import Matcher
 from nonebot.adapters.mirai2 import GroupMessage 
 from nonebot.params import Arg, CommandArg, ArgPlainText
 
-from ..service.ChangeSexService import ChangeSexService
+from service.ChangeSexService import ChangeSexService
 
 change_woman = on_command("变女性", rule=to_me())
 
