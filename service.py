@@ -2,25 +2,16 @@ from typing import Union
 
 import random
 
-from dao import LoversDAO, NiuziDAO
-from entiry import Lovers, NiuZi
-from Msg import msg
-from utils.Sex import Sex
+from .dao import LoversDAO, NiuziDAO
+from .entiry import Lovers, NiuZi
+from .Msg import msg
+from .utils.Sex import Sex
 
 class BaseService:
 
     def __init__(self) -> None:
         self.niuzi_dao = NiuziDAO()
         self.lovers_dao = LoversDAO()
-
-    def describe(self) -> Union[str, None]:
-        return None
-
-    def usage(self) -> Union[str, None]:
-        return None
-    
-    def needPerm(self) -> bool:
-        return False
 
 
 class ChangeSexService(BaseService):

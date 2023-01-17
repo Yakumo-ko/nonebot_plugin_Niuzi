@@ -1,15 +1,40 @@
-from nonebot import on_command
-from nonebot.rule import to_me
-from nonebot.matcher import Matcher
-from nonebot.adapters.mirai2 import GroupMessage 
-from nonebot.params import Arg, CommandArg, ArgPlainText
 
-from service.ChangeSexService import ChangeSexService
+from abc import ABC, abstractmethod
+from typing_extensions import override
 
-change_woman = on_command("变女性", rule=to_me())
+from nonebot import get_driver
 
-@change_woman.handle()
-async def handle_first_receive \
-        (matcher: Matcher, event: GroupMessage):
-    await matcher.finish(ChangeSexService().change2Woman(event.get_user_id()))
+from .config import Config
+from .service import InfoService, ChangeSexService 
+
+plugin_config = Config.parse_obj(get_driver().config.nonebot_plugin_niuzi)
+
+
+class BaseSubCmd(ABC):
+
+    def desrcibe(self) -> str:
+        return "null"
+    
+    @abstractmethod
+    def useage(self) -> str:
+        pass
+
+class InfoCmd(BaseSubCmd):
+
+    @override
+    def useage(self) -> str:
+        return "女性"
+
+    def getInfo(self, qq: str) -> str:
+        return InfoService().getNiuziInfo(qq)
+
+
+class ChangeSex(BaseSubCmd):
+
+    @override
+    def useage(self) -> str:
+        return "变女性"
+
+    def change2Woman(self, qq: str) -> str:
+        return ChangeSexService().change2Woman(qq, plugin_config.change2woman)
 

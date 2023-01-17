@@ -1,7 +1,6 @@
 from typing import Union, Dict, Tuple, List, Any
 
 from nonebot import get_driver
-
 from .config import Config
 from .entiry import Lovers, NiuZi
 from .utils.Mysql import Sql
@@ -20,7 +19,7 @@ class LoversDAO:
 
 
     def __init__(self) -> None:
-        conf = Config.parse_obj(get_driver().config)
+        conf = Config.parse_obj(get_driver().config.nonebot_plugin_niuzi)
         self.sql: Sql = Sql(
                 conf.host, 
                 conf.port, 
@@ -90,7 +89,7 @@ class LoversDAO:
 
 class NiuziDAO:
     # sql table name
-    __NIUZI_INFO: str = "niuzi_info"
+    __NIUZI_INFO: str = "niuzi_data"
 
     # sql 
     __CREAT_NIUZI_INFO: str =  """\
@@ -104,7 +103,7 @@ class NiuziDAO:
             """.format(table_name = __NIUZI_INFO)
 
     def __init__(self) -> None:
-        conf = Config.parse_obj(get_driver().config)
+        conf = Config.parse_obj(get_driver().config.nonebot_plugin_niuzi)
         self.sql: Sql = Sql(
                 conf.host, 
                 conf.port, 
@@ -123,7 +122,7 @@ class NiuziDAO:
                 )
 
         res: Union[Tuple[Dict[str, Any]], None]= self.sql.executeQuerySql(sql)
-
+        
         return NiuZi(**res[0]) if res!=None else None
 
     def getAll(self) -> Union[List[NiuZi], None]:

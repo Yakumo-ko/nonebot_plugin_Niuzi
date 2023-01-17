@@ -2,8 +2,8 @@ from enum import IntEnum, unique
 
 @unique
 class Sex(IntEnum):
-    FEMALE = 0
-    MALE = 1
+    MALE = 0
+    FEMALE = 1
 
     @classmethod
     def getMax(cls) -> int:
