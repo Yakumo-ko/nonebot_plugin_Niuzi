@@ -1,7 +1,7 @@
 import pytest
 from nonebug import App
 
-from typing import TYPE_CHECKING, Set, Type
+from typing import TYPE_CHECKING, Set, Type, Union
 
 if TYPE_CHECKING:
     from nonebot.plugin import Plugin
@@ -36,12 +36,13 @@ async def test_niuzi(app: App, load_plugins) -> None:
 
     msg = Msg(**setting) 
 
-    import nonebot
     from nonebot.adapters.mirai2.message import MessageChain 
     from nonebot.adapters.mirai2.event import GroupMessage 
     from nonebot.adapters.mirai2.event import GroupChatInfo
 
     from .command import matcher
+    from .entiry import NiuZi
+    from .dao import NiuziDAO
 
     Message: Type[MessageChain] = MessageChain 
 
@@ -71,10 +72,28 @@ async def test_niuzi(app: App, load_plugins) -> None:
             ctx.should_call_send(event, expected, True)
             ctx.should_finished()
 
+    niuzi_dao =  NiuziDAO()
+
+    # for not args
     await testCase("/niuzi", "参数捏", 2501390802)
+
+    # for change sex
     await testCase("/niuzi 变女性", msg.change_sex.no_niuzi, 201390802)
-    await testCase("/niuzi 变女性", msg.change_sex.no_niuzi, 201390802)
+    niuzi = niuzi_dao.findNiuziByQQ(2501390802)
+    assert niuzi != None
     await testCase("/niuzi 变女性", msg.change_sex.already_woman, 2501390802)
+
+    # for get new niuzi
+    await testCase("/niuzi 领养牛子", msg.get.has_niuzi, 2501390802)
+    await testCase("/niuzi 领养牛子", msg.get.success, 250139082)
+    niuzi: Union[NiuZi, None] = niuzi_dao.findNiuziByQQ("250139082")
+    assert niuzi!= None
+
+    await testCase("/niuzi 领养牛子", msg.get.has_niuzi, 250139082)
+    niuzi_dao.delete(niuzi)
+    niuzi: Union[NiuZi, None] = niuzi_dao.findNiuziByQQ("250139082")
+    assert niuzi == None
+
 
         
     

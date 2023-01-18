@@ -1,3 +1,4 @@
+from typing import Type, Dict, Any
 from nonebot import get_driver
 from nonebot.adapters.mirai2.event import GroupMessage
 from nonebot.adapters import Message
@@ -5,7 +6,13 @@ from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
 from nonebot.plugin import on_command
 from nonebot.rule import to_me
-from .subcommand import ChangeSex, InfoCmd
+from .subcommand import * 
+
+
+subcmds: Dict[str, Any] = {
+        "变女性": ChangeSexCmd,
+        "领养牛子": GetCmd,
+        }
 
 
 matcher = on_command("niuzi", rule=to_me())
@@ -17,10 +24,14 @@ async def info (matchar: Matcher, event: GroupMessage, message: Message = Comman
     if len(args) == 0:
         await matchar.finish("参数捏")
 
-    cmd_list = args.split(' ') 
-    if len(cmd_list) == 0:
-        cmd_list.append(args)
+    for item in subcmds.items():
+        if args.startswith(item[0]) :
+            cmd_list = args.split(' ') 
 
-    if cmd_list[0] == "变女性": 
-        await matchar.finish(ChangeSex().change2Woman(event.get_user_id()))
+            if len(cmd_list) == 0:
+                cmd_list.append(args)
 
+            cmd: BaseSubCmd = item[1](item[0])
+            res: str = cmd.execute(cmd_list, event)
+            await matchar.finish(res)
+            

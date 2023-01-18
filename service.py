@@ -18,7 +18,7 @@ class BaseService:
 
 class ChangeSexService(BaseService):
     
-    def change2Woman(self, qq: str, length: int) -> str:
+    def change2Woman(self, qq: str, length: int = 50) -> str:
         niuzi: Union[NiuZi, None] = self.niuzi_dao.findNiuziByQQ(qq)
         if niuzi == None:
             return msg.change_sex.no_niuzi
@@ -43,15 +43,18 @@ class GetService(BaseService):
         if self.niuzi_dao.findNiuziByQQ(qq) != None:
             return msg.get.has_niuzi
 
-        self.__createNiuzi(qq, name)
+        niuzi = self.__createNiuzi(qq, name)
+        self.niuzi_dao.insert(niuzi)
         return msg.get.success
 
     def __createNiuzi(self, qq, name: str) -> NiuZi:
         values = {
-                "owner": qq,
+                "qq": qq,
                 "name": name,
                 "length": random.randint(0, 10),
-                "sex": random.randint(Sex.getMin(), Sex.getMax()) 
+                "sex": random.randint(Sex.getMin(), Sex.getMax()),
+                "level": 0,
+                "points": 0
                 }
         return NiuZi(**values)
  

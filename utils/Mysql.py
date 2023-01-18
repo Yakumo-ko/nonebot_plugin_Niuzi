@@ -50,6 +50,7 @@ class Sql:
 
         cursor: DictCursor = self.__connect()
         res: int  = cursor.execute(sql) 
+        self.db.commit()
         self.__close()
 
         return True if res!=0 else False

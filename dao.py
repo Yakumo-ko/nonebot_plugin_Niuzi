@@ -141,7 +141,7 @@ class NiuziDAO:
     def insert(self, niuzi: NiuZi) -> bool:
         sql: str =  "INSERT INTO `{table_name}` \
         (qq,name,length,sex) VALUE\
-        ({qq}, {name}, {lenght}, {sex})".format(
+        ({qq}, '{name}', {lenght}, {sex})".format(
                     qq = niuzi.qq,
                     name = niuzi.name,
                     lenght = niuzi.length,
