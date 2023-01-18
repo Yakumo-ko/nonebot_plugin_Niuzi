@@ -12,6 +12,7 @@ from .subcommand import *
 subcmds: Dict[str, Any] = {
         "变女性": ChangeSexCmd,
         "领养牛子": GetCmd,
+        "我的牛子": InfoCmd,
         }
 
 

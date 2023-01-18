@@ -31,12 +31,19 @@ class BaseSubCmd(ABC):
 class InfoCmd(BaseSubCmd):
 
     @override
+    def desrcibe(self) -> str:
+        return "查看你牛子"
+
+    @override
     def useage(self) -> str:
         return "女性"
 
-    def getInfo(self, qq: str) -> str:
-        return InfoService().getNiuziInfo(qq)
-
+    @override
+    def execute(self, args: list, event: GroupMessage) -> str:
+        return InfoService().getNiuziInfo(
+                    event.get_user_id(),
+                    qq_name = event.sender.name
+                )
 
 class ChangeSexCmd(BaseSubCmd):
 
@@ -60,5 +67,4 @@ class GetCmd(BaseSubCmd):
                     plugin_config.defalut_nick_name
                 )
         
-
 

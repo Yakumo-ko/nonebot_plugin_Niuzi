@@ -42,6 +42,7 @@ async def test_niuzi(app: App, load_plugins) -> None:
 
     from .command import matcher
     from .entiry import NiuZi
+    from .utils.Sex import Sex
     from .dao import NiuziDAO
 
     Message: Type[MessageChain] = MessageChain 
@@ -81,6 +82,7 @@ async def test_niuzi(app: App, load_plugins) -> None:
     await testCase("/niuzi 变女性", msg.change_sex.no_niuzi, 201390802)
     niuzi = niuzi_dao.findNiuziByQQ(2501390802)
     assert niuzi != None
+
     await testCase("/niuzi 变女性", msg.change_sex.already_woman, 2501390802)
 
     # for get new niuzi
@@ -93,6 +95,21 @@ async def test_niuzi(app: App, load_plugins) -> None:
     niuzi_dao.delete(niuzi)
     niuzi: Union[NiuZi, None] = niuzi_dao.findNiuziByQQ("250139082")
     assert niuzi == None
+
+    # for get niuzi info
+    await testCase("/niuzi 我的牛子", msg.info.no_niuzi, 250139082)
+
+    niuzi: Union[NiuZi, None] = niuzi_dao.findNiuziByQQ("2501390802")
+    expected = msg.info.niuzi_info.format(
+                qq = niuzi.qq,
+                name = niuzi.name,
+                sex =  '女' if niuzi.sex == Sex.FEMALE else '男',
+                length = niuzi.length,
+                qq_name = "八云幽" 
+
+            )
+    await testCase("/niuzi 我的牛子", expected, 2501390802)
+    await testCase("/niuzi 我的牛子", msg.info.no_niuzi, 222)
 
 
         

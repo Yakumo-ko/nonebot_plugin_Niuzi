@@ -61,11 +61,21 @@ class GetService(BaseService):
 
 class InfoService(BaseService):
     
-    def getNiuziInfo(self, qq) -> str:
+    def getNiuziInfo(self, qq, qq_name) -> str:
+        """
+        Note: The str return include qq, name, sex end length
+        """
         niuzi: Union[NiuZi, None]= self.niuzi_dao.findNiuziByQQ(qq)
         if niuzi == None:
             return msg.info.no_niuzi
 
-        return msg.info.niuzi_info
+        res = msg.info.niuzi_info.format(
+                qq = niuzi.qq,
+                name = niuzi.name,
+                sex =  '女' if niuzi.sex == Sex.FEMALE else '男',
+                length = niuzi.length,
+                qq_name = qq_name
+                )
 
+        return  res
 
