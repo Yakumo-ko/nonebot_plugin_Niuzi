@@ -31,7 +31,10 @@ def load_plugins(nonebug_init: None) -> Set['Plugin']:
 
 
 @pytest.mark.asyncio
-async def test_weather(app: App, load_plugins) -> None:
+async def test_niuzi(app: App, load_plugins) -> None:
+    from .msg import Msg, setting 
+
+    msg = Msg(**setting) 
 
     import nonebot
     from nonebot.adapters.mirai2.message import MessageChain 
@@ -39,7 +42,6 @@ async def test_weather(app: App, load_plugins) -> None:
     from nonebot.adapters.mirai2.event import GroupChatInfo
 
     from .command import matcher
-    from .Msg import msg
 
     Message: Type[MessageChain] = MessageChain 
 
@@ -70,8 +72,9 @@ async def test_weather(app: App, load_plugins) -> None:
             ctx.should_finished()
 
     await testCase("/niuzi", "参数捏", 2501390802)
-    await testCase("/niuzi 变女性", msg['change_sex']['no_niuzi'], 201390802)
-    await testCase("/niuzi 变女性", msg['change_sex']['already_woman'], 2501390802)
+    await testCase("/niuzi 变女性", msg.change_sex.no_niuzi, 201390802)
+    await testCase("/niuzi 变女性", msg.change_sex.no_niuzi, 201390802)
+    await testCase("/niuzi 变女性", msg.change_sex.already_woman, 2501390802)
 
         
     

@@ -9,7 +9,7 @@ from .utils.Mysql import Sql
 
 class LoversDAO:
     # sql table name
-    __LOVERS: str = "lovers"
+    __LOVERS: str = "lovers_data"
 
     __CREAT_LOVERS: str = """\
             CREATE TABLE IF NOT EXISTS `{table_name}` (                          
@@ -95,7 +95,8 @@ class NiuziDAO:
     __CREAT_NIUZI_INFO: str =  """\
             CREATE TABLE IF NOT EXISTS `{table_name}` (                 
                     `qq` BIGINT UNIQUE NOT NULL,                
-                    `name` TEXT, `length` FLOAT,                
+                    `name` TEXT, 
+                    `length` DOUBLE,                
                     `sex` INTEGER DEFAULT 0,                    
                     `level` INT DEFAULT 0,                      
                     `points` INT DEFAULT 0, PRIMARY KEY (`qq`)  
@@ -141,7 +142,7 @@ class NiuziDAO:
         sql: str =  "INSERT INTO `{table_name}` \
         (qq,name,length,sex) VALUE\
         ({qq}, {name}, {lenght}, {sex})".format(
-                    qq = niuzi.owner,
+                    qq = niuzi.qq,
                     name = niuzi.name,
                     lenght = niuzi.length,
                     sex = niuzi.sex,
@@ -161,7 +162,7 @@ class NiuziDAO:
                     sex = niuzi.sex,
                     name = niuzi.name,
                     length = niuzi.length,
-                    qq = niuzi.owner,
+                    qq = niuzi.qq,
                     table_name = self.__NIUZI_INFO
                 )
 
@@ -169,7 +170,7 @@ class NiuziDAO:
 
     def delete(self, niuzi: NiuZi) -> bool:
         sql: str = "DELETE  FROM `{table_name}` WHERE `qq`= {qq}".format(
-                    qq=niuzi.owner,
+                    qq = niuzi.qq,
                     table_name = self.__NIUZI_INFO
                 )
 

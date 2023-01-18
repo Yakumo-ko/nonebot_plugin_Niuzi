@@ -1,6 +1,7 @@
+from pydantic import BaseModel
 
-msg = {
-    "amdin": {
+setting = {
+    "admin": {
         "change": {
             "no_args": "不给要改的人和长度我怎么改",
             "no_length": "不给长度我怎么改"
@@ -70,17 +71,17 @@ msg = {
             } 
         },
 
-        "leave": {
-            "no_lover": "你没对象你分哪门子手？",
-            "request": {
-                "send": """\
-                    {0} 你好，{1} 想跟你分手
-                    输入命令「处理请求 分手 同意/不同意」
-                    """,
-                "agree": "{0} 对方同意了你的分手请求……",
-                "disagree": "{0} 对方没有同意你的请求"
-            }
-        },
+    "leave": {
+        "no_lover": "你没对象你分哪门子手？",
+        "request": {
+            "send": """\
+                {0} 你好，{1} 想跟你分手
+                输入命令「处理请求 分手 同意/不同意」
+                """,
+            "agree": "{0} 对方同意了你的分手请求……",
+            "disagree": "{0} 对方没有同意你的请求"
+        }
+    },
 
       "status": """\
             你的对象：{0}({1})
@@ -97,15 +98,117 @@ msg = {
         "fail": "你俩能不能消停会儿 都粘掉皮了😅 等 {0} 再贴"
         },
 
+    "no_arg": "参数捏",
     "no_at_args": "你不艾特人家我怎么知道是谁？",
     "no_at": "你发的什么东西我看不懂，你重新@一下",
     "member_not_found": "群里都没这人你瞎搞什么？",
     "success": "行了行了行了",
     "number_error": "你看看你发的什么东西，是数字吗？",
     "not_perm": "你没有权限执行该命令。",
-    "no_niuZi": "你没有牛子你在这你想干什么啊",
+    "no_niuzi": "你没有牛子你在这你想干什么啊",
     "no_request": "没有待处理的请求",
     "name_too_long": "你牛子名字太长了，最多只支持10个字",
     "command_header": "牛子养成系统(未开发完成)",
     "command_helper": "命令：{0} {1}  {2}"
 }
+
+
+class Admin(BaseModel):
+    class Change(BaseModel):
+        no_args: str
+        no_length: str
+
+    class View(BaseModel):
+        no_args: str
+
+    change: Change
+    view: View
+
+class Cum(BaseModel):
+    already: str
+    success: str
+
+class Get(BaseModel):
+    has_niuzi: str
+    success: str
+
+class Name(BaseModel):
+    no_args: str
+
+class PK(BaseModel):
+    no_args: str
+    same: str
+    target_no_niuzi: str
+    source_in_cd: str
+    target_in_cd: str
+    lost: str
+    win: str
+    both_lost: str
+
+class Info(BaseModel):
+    no_niuzi: str
+    niuzi_info: str
+
+class ChangeSex(BaseModel):
+    already_woman: str
+    success: str
+    no_niuzi: str
+
+class Lover(BaseModel):
+    class Get(BaseModel):
+        self: str
+        has_lover: str
+        target_no_niuzi: str
+        fail: str
+
+    class Request(BaseModel):
+        send: str
+        agree: str 
+        disagree: str
+        exists: str
+
+       
+    get: Get
+    request: Request
+
+class Leave(BaseModel):
+    class Request(BaseModel):
+        send: str
+        agree: str
+        disagree: str
+
+    no_lover: str
+    request: Request
+
+
+class DOI(BaseModel):
+    no_lover: str
+    success: str
+    fail: str
+    
+class Msg(BaseModel):
+    admin: Admin
+    cum: Cum
+    get: Get
+    name: Name
+    pk: PK
+    info: Info
+    change_sex: ChangeSex
+    lover: Lover
+    leave: Leave
+    status: str
+    no_lover: str
+    doi: DOI
+    no_arg: str 
+    no_at_args: str
+    no_at: str
+    member_not_found: str
+    success: str
+    number_error: str
+    not_perm: str
+    no_niuzi: str
+    no_request: str
+    name_too_long: str
+    command_header: str
+    command_helper: str
+
