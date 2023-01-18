@@ -155,8 +155,8 @@ class NiuziDAO:
         sql: str = """ \
             UPDATE `{table_name}` SET  
                         `sex` = {sex}, 
-                        `name` = {name}, 
-                        'lenght' ={length},
+                        `name` = '{name}', 
+                        `length` ={length}
                     WHERE `qq` = {qq}
             """.format(
                     sex = niuzi.sex,

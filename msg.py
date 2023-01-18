@@ -22,6 +22,8 @@ setting = {
         },
 
     "name": {
+        "success": "行了行了行了",
+        "name_too_long": "你牛子名字太长了，最多只支持10个字",
         "no_args": "你牛子要改的名字给忘了, 我怎么改?" 
         },
 
@@ -102,12 +104,10 @@ setting = {
     "no_at_args": "你不艾特人家我怎么知道是谁？",
     "no_at": "你发的什么东西我看不懂，你重新@一下",
     "member_not_found": "群里都没这人你瞎搞什么？",
-    "success": "行了行了行了",
     "number_error": "你看看你发的什么东西，是数字吗？",
     "not_perm": "你没有权限执行该命令。",
     "no_niuzi": "你没有牛子你在这你想干什么啊",
     "no_request": "没有待处理的请求",
-    "name_too_long": "你牛子名字太长了，最多只支持10个字",
     "command_header": "牛子养成系统(未开发完成)",
     "command_helper": "命令：{0} {1}  {2}"
 }
@@ -134,6 +134,8 @@ class Get(BaseModel):
 
 class Name(BaseModel):
     no_args: str
+    name_too_long: str
+    success: str
 
 class PK(BaseModel):
     no_args: str
@@ -203,12 +205,10 @@ class Msg(BaseModel):
     no_at_args: str
     no_at: str
     member_not_found: str
-    success: str
     number_error: str
     not_perm: str
     no_niuzi: str
     no_request: str
-    name_too_long: str
     command_header: str
     command_helper: str
 

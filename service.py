@@ -79,3 +79,19 @@ class InfoService(BaseService):
 
         return  res
 
+class NameService(BaseService):
+
+    def changeName(self, qq: str, new_name: str) -> str:
+        if len(new_name) == 0:
+            return msg.no_arg
+        
+        if len(new_name) > 10:
+            return msg.name.name_too_long
+
+        niuzi: Union[NiuZi, None] = self.niuzi_dao.findNiuziByQQ(qq)
+        if niuzi == None:
+            return msg.no_niuzi
+
+        niuzi.name = new_name
+        self.niuzi_dao.update(niuzi)
+        return msg.name.success

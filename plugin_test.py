@@ -111,6 +111,16 @@ async def test_niuzi(app: App, load_plugins) -> None:
     await testCase("/niuzi 我的牛子", expected, 2501390802)
     await testCase("/niuzi 我的牛子", msg.info.no_niuzi, 222)
 
+    " for change name for niuzi"
+    await testCase("/niuzi 改牛子名", msg.no_arg, 222)
+    await testCase("/niuzi 改牛子名 niuzidsgfdgdfgdfg", 
+                   msg.name.name_too_long, 2501390802)
+    await testCase("/niuzi 改牛子名 niuzi n", msg.name.success, 2501390802)
+    niuzi: Union[NiuZi, None] = niuzi_dao.findNiuziByQQ("2501390802")
+    assert niuzi.name == "niuzi n"
+    await testCase("/niuzi 改牛子名 牛子", msg.name.success, 2501390802)
+    
+
 
         
     

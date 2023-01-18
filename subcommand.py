@@ -61,10 +61,24 @@ class GetCmd(BaseSubCmd):
     def useage(self) -> str:
         return self.cmd_prefix
 
+    @override
     def execute(self, args: list, event: GroupMessage) -> str:
         return GetService().getNewNiuzi(
                     event.get_user_id(), 
                     plugin_config.defalut_nick_name
                 )
         
+class NameCmd(BaseSubCmd):
 
+    @override
+    def desrcibe(self) -> str:
+        return "改你牛子的名字, 支持空格, 最长10个字"
+
+    @override
+    def useage(self) -> str:
+        return self.cmd_prefix + " <name>"
+
+    @override
+    def execute(self, args: list, event: GroupMessage) -> str:
+        name = " ".join(args)
+        return NameService().changeName(event.get_user_id(), name) 

@@ -13,6 +13,7 @@ subcmds: Dict[str, Any] = {
         "变女性": ChangeSexCmd,
         "领养牛子": GetCmd,
         "我的牛子": InfoCmd,
+        "改牛子名": NameCmd
         }
 
 
@@ -27,10 +28,9 @@ async def info (matchar: Matcher, event: GroupMessage, message: Message = Comman
 
     for item in subcmds.items():
         if args.startswith(item[0]) :
+            args = args.replace(item[0], "")
             cmd_list = args.split(' ') 
-
-            if len(cmd_list) == 0:
-                cmd_list.append(args)
+            cmd_list.remove('')
 
             cmd: BaseSubCmd = item[1](item[0])
             res: str = cmd.execute(cmd_list, event)
