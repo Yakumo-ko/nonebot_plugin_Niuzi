@@ -2,9 +2,12 @@
 from abc import ABC, abstractmethod
 from typing_extensions import override
 
-from nonebot import get_driver
+from nonebot import get_driver, get_bot
+from nonebot.adapters.mirai2.bot import Bot
+
 from nonebot.adapters.mirai2.event import GroupMessage
 from nonebot.adapters import Message
+from nonebot.adapters.mirai2.message import MessageSegment, MessageType, MessageChain
 
 from .config import Config
 from .service import * 
@@ -82,3 +85,31 @@ class NameCmd(BaseSubCmd):
     def execute(self, args: list, event: GroupMessage) -> str:
         name = " ".join(args)
         return NameService().changeName(event.get_user_id(), name) 
+
+class PKCommand(BaseSubCmd):
+
+    @override
+    def desrcibe(self) -> str:
+        return "比划一下, 赢加长度输减长度, 断掉双方都减长度"
+
+    @override
+    def useage(self) -> str:
+        return self.cmd_prefix + " <@target>"
+
+    @override
+    async def execute(self, args: list, event: GroupMessage) -> str:
+        msg_seg: Union[MessageSegment, None] = event.message_chain. \
+                            extract_first(MessageType.AT)
+        if msg_seg == None:
+            PKService().pk(event.get_user_id(), event.sender.name, "", "")
+
+        bot: Bot = get_bot()
+        member= await bot.member_profile(target=event.sender.group.id, member_id=msg_seg.data.target)
+
+        return PKService().pk(
+            event.get_user_id(),
+            event.sender.name,
+            msg_seg.data.target,
+            member["nickname"]
+                )
+

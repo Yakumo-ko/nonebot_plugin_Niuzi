@@ -20,4 +20,8 @@ class NiuZi(BaseModel):
     sex: int
     level: int
     points: int
+
+class CoolDown(BaseModel):
+    qq: int
+    timestampe: int
  

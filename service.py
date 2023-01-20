@@ -1,10 +1,12 @@
 from typing import Union
 
 import random
+import datetime
 
 from .dao import LoversDAO, NiuziDAO
-from .entiry import Lovers, NiuZi
+from .entiry import CoolDown, Lovers, NiuZi
 from .msg import Msg, setting 
+from .event import *
 from .utils.Sex import Sex
 
 msg = Msg(**setting) 
@@ -14,6 +16,7 @@ class BaseService:
     def __init__(self) -> None:
         self.niuzi_dao = NiuziDAO()
         self.lovers_dao = LoversDAO()
+        self.cd_dao = CoolDownDAO()
 
 
 class ChangeSexService(BaseService):
@@ -95,3 +98,65 @@ class NameService(BaseService):
         niuzi.name = new_name
         self.niuzi_dao.update(niuzi)
         return msg.name.success
+
+class PKService(BaseService):
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.events = [
+                    PKLost,
+                    PKWin,
+                    PKAllLost
+                ]
+
+    def __hasInCd(self, qq: str) -> datetime.timedelta:
+        cool_down: Union[CoolDown, None] = self.cd_dao.findCoolDownByQQ(qq)
+        if cool_down == None:
+            return datetime.timedelta(seconds=0)
+        old = datetime.datetime.fromtimestamp(cool_down.timestampe)
+        return datetime.datetime.now() - old
+
+    def __targetEvent(self, 
+                      niuzi: NiuZi, 
+                      qq_name: str, 
+                      target_niuzi: NiuZi, 
+                      qq_name_target: str) -> str:
+
+        event: PKEvent = random.choice(self.events)
+        return event.execute(niuzi, qq_name, target_niuzi, qq_name_target)
+            
+    def pk(self, 
+           sender_qq: str, 
+           sender_name: str, 
+           target_qq: str, 
+           name_target: str,
+           cd: int) -> str:
+
+        niuzi: Union[NiuZi, None] = self.niuzi_dao.findNiuziByQQ(sender_qq)
+        if niuzi == None:
+            return msg.no_niuzi
+
+        if len(target_qq)== None:
+            return msg.no_niuzi
+
+        if sender_qq == target_qq:
+            return msg.pk.same
+
+        time: datetime.timedelta = self.__hasInCd(sender_qq)
+        if time.seconds >= cd:
+            return msg.pk.source_in_cd.format(time.seconds)
+
+        if target_qq == None:
+            return msg.pk.no_args
+        
+        target_niuzi: Union[NiuZi, None] = self.niuzi_dao.findNiuziByQQ(target_qq)
+        if target_niuzi == None:
+            return msg.pk.target_no_niuzi
+
+        time: datetime.timedelta = self.__hasInCd(target_qq)
+        if time.seconds > 0:
+            return msg.pk.target_in_cd.format(time.seconds)
+    
+        return self.__targetEvent(niuzi, sender_name, target_niuzi, name_target)         
+
+        

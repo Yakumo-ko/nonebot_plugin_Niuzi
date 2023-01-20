@@ -2,10 +2,10 @@ from typing import Union, Dict, Tuple, List, Any
 
 from nonebot import get_driver
 from .config import Config
-from .entiry import Lovers, NiuZi
+from .entiry import * 
 from .utils.Mysql import Sql
 
-
+conf = Config.parse_obj(get_driver().config.nonebot_plugin_niuzi)
 
 class LoversDAO:
     # sql table name
@@ -19,7 +19,6 @@ class LoversDAO:
 
 
     def __init__(self) -> None:
-        conf = Config.parse_obj(get_driver().config.nonebot_plugin_niuzi)
         self.sql: Sql = Sql(
                 conf.host, 
                 conf.port, 
@@ -104,7 +103,6 @@ class NiuziDAO:
             """.format(table_name = __NIUZI_INFO)
 
     def __init__(self) -> None:
-        conf = Config.parse_obj(get_driver().config.nonebot_plugin_niuzi)
         self.sql: Sql = Sql(
                 conf.host, 
                 conf.port, 
@@ -175,3 +173,52 @@ class NiuziDAO:
                 )
 
         return self.sql.executeNotQuerySql(sql)
+
+class CoolDownDAO:
+    __TB_COOLDOWN = "cool_down"
+
+    __CREAT_COOLDOWN = """\
+            CREATE TABLE IF NOT EXISTS `{table_name}` (
+                `qq` BIGINT UNIQUE NOT NULL,`timestampe` BIGINT     
+            )
+            """.format(table_name = __TB_COOLDOWN)
+
+    def __init__(self) -> None:
+        self.sql: Sql = Sql(
+                conf.host, 
+                conf.port, 
+                conf.user, 
+                conf.password, 
+                conf.database
+            )
+
+    def findCoolDownByQQ(self, qq: str) -> Union[CoolDown, None]:
+        sql: str = "select * from `{tb_name}` where `qq`='{qq}'".format(
+                tab_name = self.__TB_COOLDOWN,
+                qq = qq
+                )
+
+        res: Union[Tuple[Dict[str, Any]], None]= self.sql.executeQuerySql(sql)
+
+        return CoolDown(**res[0]) if res!=None else None
+
+    def insert(self, cd: CoolDown) -> bool:
+        sql: str =  "INSERT INTO `{table_name}` \
+                        (qq, timestampe) VALUE\
+                        ({qq}, {time})".format(
+                                qq = cd.qq,
+                                time = cd.timestampe,
+                                table_name = self.__TB_COOLDOWN
+                            )
+
+        return self.sql.executeNotQuerySql(sql)
+
+    def delete(self, cd: CoolDown) -> bool:
+        sql: str = "DELETE  FROM `{table_name}` WHERE `qq`= {qq}".format(
+                    qq = cd.qq,
+                    table_name = self.__TB_COOLDOWN
+                )
+
+        return self.sql.executeNotQuerySql(sql)
+
+
