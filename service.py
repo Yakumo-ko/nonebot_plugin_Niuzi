@@ -109,7 +109,7 @@ class PKService(BaseService):
                     PKAllLost
                 ]
 
-    def __hasInCd(self, qq: str) -> datetime.timedelta:
+    def __getCd(self, qq: str) -> datetime.timedelta:
         cool_down: Union[CoolDown, None] = self.cd_dao.findCoolDownByQQ(qq)
         if cool_down == None:
             return datetime.timedelta(seconds=0)
@@ -142,7 +142,7 @@ class PKService(BaseService):
         if sender_qq == target_qq:
             return msg.pk.same
 
-        time: datetime.timedelta = self.__hasInCd(sender_qq)
+        time: datetime.timedelta = self.__getCd(sender_qq)
         if time.seconds >= cd:
             return msg.pk.source_in_cd.format(time.seconds)
 
@@ -153,7 +153,7 @@ class PKService(BaseService):
         if target_niuzi == None:
             return msg.pk.target_no_niuzi
 
-        time: datetime.timedelta = self.__hasInCd(target_qq)
+        time: datetime.timedelta = self.__getCd(target_qq)
         if time.seconds > 0:
             return msg.pk.target_in_cd.format(time.seconds)
     

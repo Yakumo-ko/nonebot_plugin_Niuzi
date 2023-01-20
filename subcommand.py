@@ -101,15 +101,18 @@ class PKCommand(BaseSubCmd):
         msg_seg: Union[MessageSegment, None] = event.message_chain. \
                             extract_first(MessageType.AT)
         if msg_seg == None:
-            PKService().pk(event.get_user_id(), event.sender.name, "", "")
+            PKService().pk(event.get_user_id(), event.sender.name, "", "", plugin_config.pk_cd)
 
         bot: Bot = get_bot()
-        member= await bot.member_profile(target=event.sender.group.id, member_id=msg_seg.data.target)
+        member= await bot.member_profile(
+                target = event.sender.group.id, 
+                member_id = msg_seg.data.target)
 
         return PKService().pk(
             event.get_user_id(),
             event.sender.name,
             msg_seg.data.target,
-            member["nickname"]
+            member["nickname"],
+            plugin_config.pk_cd
                 )
 
