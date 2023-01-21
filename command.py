@@ -13,7 +13,8 @@ subcmds: Dict[str, Any] = {
         "变女性": ChangeSexCmd,
         "领养牛子": GetCmd,
         "我的牛子": InfoCmd,
-        "改牛子名": NameCmd
+        "改牛子名": NameCmd,
+        "比划比划": PKCmd,
         }
 
 
@@ -33,6 +34,6 @@ async def info (matchar: Matcher, event: GroupMessage, message: Message = Comman
             cmd_list.remove('')
 
             cmd: BaseSubCmd = item[1](item[0])
-            res: str = cmd.execute(cmd_list, event)
+            res: str = await cmd.execute(cmd_list, event)
             await matchar.finish(res)
             

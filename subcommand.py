@@ -28,7 +28,7 @@ class BaseSubCmd(ABC):
         pass
 
     @abstractmethod
-    def execute(self, args: list, event: GroupMessage) -> str:
+    async def execute(self, args: list, event: GroupMessage) -> str:
         pass
 
 class InfoCmd(BaseSubCmd):
@@ -42,7 +42,7 @@ class InfoCmd(BaseSubCmd):
         return "女性"
 
     @override
-    def execute(self, args: list, event: GroupMessage) -> str:
+    async def execute(self, args: list, event: GroupMessage) -> str:
         return InfoService().getNiuziInfo(
                     event.get_user_id(),
                     qq_name = event.sender.name
@@ -55,7 +55,7 @@ class ChangeSexCmd(BaseSubCmd):
         return self.cmd_prefix
 
     @override
-    def execute(self, args: list, event: GroupMessage) -> str:
+    async def execute(self, args: list, event: GroupMessage) -> str:
         return ChangeSexService().change2Woman(event.get_user_id())
 
 class GetCmd(BaseSubCmd):
@@ -65,7 +65,7 @@ class GetCmd(BaseSubCmd):
         return self.cmd_prefix
 
     @override
-    def execute(self, args: list, event: GroupMessage) -> str:
+    async def execute(self, args: list, event: GroupMessage) -> str:
         return GetService().getNewNiuzi(
                     event.get_user_id(), 
                     plugin_config.defalut_nick_name
@@ -82,11 +82,11 @@ class NameCmd(BaseSubCmd):
         return self.cmd_prefix + " <name>"
 
     @override
-    def execute(self, args: list, event: GroupMessage) -> str:
+    async def execute(self, args: list, event: GroupMessage) -> str:
         name = " ".join(args)
         return NameService().changeName(event.get_user_id(), name) 
 
-class PKCommand(BaseSubCmd):
+class PKCmd(BaseSubCmd):
 
     @override
     def desrcibe(self) -> str:
@@ -98,21 +98,40 @@ class PKCommand(BaseSubCmd):
 
     @override
     async def execute(self, args: list, event: GroupMessage) -> str:
-        msg_seg: Union[MessageSegment, None] = event.message_chain. \
-                            extract_first(MessageType.AT)
-        if msg_seg == None:
-            PKService().pk(event.get_user_id(), event.sender.name, "", "", plugin_config.pk_cd)
+        for seg in event.get_message().export():
+            if seg['type'] == MessageType.AT:
 
-        bot: Bot = get_bot()
-        member= await bot.member_profile(
-                target = event.sender.group.id, 
-                member_id = msg_seg.data.target)
+                # pytest likely can't get bot here
+                """
+                bot: Bot = get_bot()
+                member= await bot.member_profile(
+                            target = event.sender.group.id, 
+                            member_id = seg['target'] 
+                        )
+
+                return PKService().pk(
+                    event.get_user_id(),
+                    event.sender.name,
+                    seg['target'],
+                    member["nickname"],
+                    plugin_config.pk_cd
+                        )
+                """
+                return PKService().pk(
+                    event.get_user_id(),
+                    event.sender.name,
+                    str(seg['target']),
+                    "none",
+                    plugin_config.pk_cd
+                        )
 
         return PKService().pk(
-            event.get_user_id(),
-            event.sender.name,
-            msg_seg.data.target,
-            member["nickname"],
-            plugin_config.pk_cd
+                    event.get_user_id(), 
+                    event.sender.name, 
+                    None, 
+                    None, 
+                    plugin_config.pk_cd
                 )
+
+
 

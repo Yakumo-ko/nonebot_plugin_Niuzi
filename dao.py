@@ -192,9 +192,11 @@ class CoolDownDAO:
                 conf.database
             )
 
+        self.sql.executeNotQuerySql(self.__CREAT_COOLDOWN)
+
     def findCoolDownByQQ(self, qq: str) -> Union[CoolDown, None]:
         sql: str = "select * from `{tb_name}` where `qq`='{qq}'".format(
-                tab_name = self.__TB_COOLDOWN,
+                tb_name = self.__TB_COOLDOWN,
                 qq = qq
                 )
 
@@ -213,9 +215,9 @@ class CoolDownDAO:
 
         return self.sql.executeNotQuerySql(sql)
 
-    def delete(self, cd: CoolDown) -> bool:
+    def deleteByQQ(self, qq: str) -> bool:
         sql: str = "DELETE  FROM `{table_name}` WHERE `qq`= {qq}".format(
-                    qq = cd.qq,
+                    qq = qq,
                     table_name = self.__TB_COOLDOWN
                 )
 

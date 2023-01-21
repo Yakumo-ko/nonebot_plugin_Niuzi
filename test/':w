@@ -89,21 +89,16 @@ async def shouldDoWithAt(
 
     from ..command import matcher
 
-    plain = MessageSegment(type=MessageType.PLAIN)
-    plain.data = {"text": args}
-    at = MessageSegment(type=MessageType.AT)
-    at.data = { "target": target_qq }
-
     tmp = {
     'self_id': 3582446171, 
     'type': 'GroupMessage', 
-    'messageChain': [plain, at], 
+    'messageChain': [], 
     'source': {
         'id': 34311, 
         'time': '2023-01-21T07:48:23+00:00'
         }, 
     'sender': {
-        'id': qq, 
+        'id': 2501390802, 
         'name': '八云幽', 
         'memberName': '八云幽',
         'permission': 'OWNER', 
@@ -115,13 +110,24 @@ async def shouldDoWithAt(
         }, 
     'to_quote': False, 
     'quote': None, 
-    'to_me': True
+    'to_me': False
 }
 
     event = GroupMessage.parse_obj(tmp)
+    event.message_chain.append(
+            MessageSegment(type=MessageType.PLAIN, data={"text": args}
+                ),
+            )
+    event.message_chain.append(
+            MessageSegment(type=MessageType.AT, data={
+                "target": target_qq 
+                })
+            )
 
     async with app.test_matcher(matcher) as ctx:
             bot = ctx.create_bot()
+
+            print(event)
 
             ctx.receive_event(bot, event)
             ctx.should_call_send(event, expected, True)
