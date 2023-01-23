@@ -18,6 +18,7 @@ plugin_config = Config.parse_obj(get_driver().config.nonebot_plugin_niuzi)
 class BaseSubCmd(ABC):
     
     def __init__(self, cmd_prefix: str) -> None:
+        self.hasRequest = False
         self.cmd_prefix = cmd_prefix
 
     def desrcibe(self) -> str:
@@ -98,7 +99,7 @@ class PKCmd(BaseSubCmd):
 
     @override
     async def execute(self, args: list, event: GroupMessage) -> str:
-        for seg in event.get_message().export():
+        jor seg in event.get_message().export():
             if seg['type'] == MessageType.AT:
 
                 # pytest likely can't get bot here
@@ -133,5 +134,52 @@ class PKCmd(BaseSubCmd):
                     plugin_config.pk_cd
                 )
 
+class TopCmd(BaseSubCmd):
+    @override
+    def desrcibe(self) -> str:
+        return "查看牛子排行榜"
 
+    @override
+    def useage(self) -> str:
+        return "none"
 
+    @override
+    async def execute(self, args: list, event: GroupMessage) -> MessageChain:
+        res: Union[List[str], None] = InfoService().getAll() 
+
+        bot_info = await get_bot().bot_pro_file()
+
+        if res == None:
+            return MessageChain(
+                    [MessageSegment.plain("太可惜了，本群还没有人领养过牛子")]
+                    )
+
+        node_list = MessageChain(
+                [MessageSegment.plain(msg) for msg in res] 
+            )
+           
+
+        return MessageChain([MessageSegment.forward(
+                        "",
+                        int(get_bot().self_id),
+                        int(datetime.datetime.now().timestamp()),
+                        bot_info['nickname'],
+                        node_list,
+                        233
+                    )
+                ])
+
+class LeaveCmd(BaseSubCmd):
+    @override
+    def desrcibe(self) -> str:
+        return "和你的对象分手"
+
+    @override
+    def useage(self) -> str:
+        return "none"
+
+    @override
+    async def execute(self, args: list, event: GroupMessage) -> MessageChain:
+        pass
+
+         

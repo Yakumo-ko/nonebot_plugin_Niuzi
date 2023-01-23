@@ -64,7 +64,10 @@ class GetService(BaseService):
  
 
 class InfoService(BaseService):
-    
+
+    def __toChinese(self, sex: int) -> str:
+        return '女' if sex == Sex.FEMALE else '男'
+
     def getNiuziInfo(self, qq, qq_name) -> str:
         """
         Note: The str return include qq, name, sex end length
@@ -76,12 +79,33 @@ class InfoService(BaseService):
         res = msg.info.niuzi_info.format(
                 qq = niuzi.qq,
                 name = niuzi.name,
-                sex =  '女' if niuzi.sex == Sex.FEMALE else '男',
+                sex =  self.__toChinese(niuzi.sex),
                 length = niuzi.length,
                 qq_name = qq_name
                 )
 
         return  res
+
+    def getAll(self) -> Union[List[str], None]:
+        niuzi_list = self.niuzi_dao.getAll()
+        if niuzi_list == None:
+            return None
+
+        niuzi_list.sort(key=lambda a: a.length, reverse=True)
+        
+        res = []
+        i = 0
+        for niuzi in niuzi_list:
+            tmp = msg.info.niuzi_info.format(
+                    qq = niuzi.qq,
+                    name = niuzi.name,
+                    sex =  self.__toChinese(niuzi.sex),
+                    length = niuzi.length,
+                    qq_name = "none" 
+                )
+              
+            res.append(f"{i}: "+ tmp)
+            i+=1
 
 class NameService(BaseService):
 
@@ -172,7 +196,36 @@ class PKService(BaseService):
         return self.__targetEvent(niuzi, sender_name, target_niuzi, name_target)         
 
 class LoveService(BaseService):
-    pass
+
+    def getLover(self, qq: str) -> Union[str, None]:
+        lover: Union[Lovers, None] = self.lovers_dao.findloversByQQ(qq)
+        return lover.target if lover != None else None
+
+
+    def getInfo(self, qq: str) -> str:
+        niuzi = self.niuzi_dao.findNiuziByQQ(qq)
+
+        return msg.status.format(
+                    qq = qq,
+                    qq_name = "",
+                    name = niuzi.name,
+                    sex = niuzi.sex,
+                    length = niuzi.length
+                )
+
+    def leaveRequest(self, qq: str) -> str:
+        lover: Lovers = self.lovers_dao.findloversByQQ(qq)
+
+        return msg.leave.request.send.format(
+                target = lover.target,
+                sender = lover.qq
+                )
+
+    def leaveAgree(self, qq: str) -> str:
+        
+        
+
+
 
 
 class AmdinService(BaseService):
