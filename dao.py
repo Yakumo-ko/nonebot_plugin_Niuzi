@@ -57,7 +57,7 @@ class LoversDAO:
         (qq, target) VALUE\
         ({qq}, {target})".format(
                     qq = lovers.qq,
-                    sex = lovers.target,
+                    target = lovers.target,
                     table_name =  self.__LOVERS
                 )
 
@@ -77,9 +77,9 @@ class LoversDAO:
 
         return self.sql.executeNotQuerySql(sql)
 
-    def delete(self, lovers: Lovers) -> bool:
+    def deleteByQQ(self, qq: str) -> bool:
         sql: str = "DELETE  FROM `{table_name}` WHERE `qq`= {qq}".format(
-                    qq=lovers.qq,
+                    qq = qq,
                     table_name =  self.__LOVERS
                 )
 

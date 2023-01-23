@@ -8,9 +8,9 @@ import datetime
 from . import load_plugins, shouldDo, shouldDoWithAt 
 
 from ..utils.Sex import Sex
-from ..entiry import CoolDown, NiuZi
+from ..entiry import * 
 
-from ..msg import Msg, setting 
+from ..msg import Lover, Msg, setting 
 
 msg = Msg(**setting) 
 
@@ -167,6 +167,99 @@ class TestPk:
                 2501390802,
                 727416332
                 )
+
+class TestLeave:
+    @pytest.mark.asyncio
+    async def test_no_args(self, app: App, load_plugins) -> None:
+        from ..dao import LoversDAO
+        qq = 123
+       
+        lovers_dao = LoversDAO()
+        assert lovers_dao.findloversByQQ(str(qq)) == None
+        
+        await shouldDo(app, "/niuzi 我要分手", msg.no_lover, qq)
+
+
+    @pytest.mark.asyncio
+    async def test_success(self, app: App, load_plugins) -> None:
+        from ..dao import LoversDAO
+        from nonebot.adapters.mirai2.message import MessageChain 
+        from nonebot.adapters.mirai2.event import GroupMessage 
+        from nonebot.adapters.mirai2.event import GroupChatInfo
+
+        from ..command import matcher
+
+        Message: Type[MessageChain] = MessageChain 
+        
+        qq = 2501390802
+        target_qq = 2501390800
+        lovers_dao = LoversDAO()
+        if lovers_dao.findloversByQQ(str(qq)) == None:
+            lovers_dao.insert(Lovers.parse_obj({
+                "qq": qq,
+                "target": target_qq 
+                }))
+
+        sender_arg = {
+                'id': qq, 
+                'name': '八云幽', 
+                'memberName': '八云幽',
+                'permission': 'OWNER', 
+                'group': {
+                    'id': 814926456, 
+                    'name': 'Minecraft拓歌群', 
+                    'permission': 'MEMBER'
+                    }
+                }
+
+        sender_arg2 = {
+                'id': target_qq, 
+                'name': '八云幽', 
+                'memberName': '八云幽',
+                'permission': 'OWNER', 
+                'group': {
+                    'id': 814926456, 
+                    'name': 'Minecraft拓歌群', 
+                    'permission': 'MEMBER'
+                    }
+                }
+
+
+
+        sender: GroupChatInfo = GroupChatInfo(**sender_arg)
+        sender2: GroupChatInfo = GroupChatInfo(**sender_arg2)
+
+        async with app.test_matcher(matcher) as ctx:
+
+                bot = ctx.create_bot()
+                msg: MessageChain = Message("/niuzi 我要分手")
+                event: GroupMessage = GroupMessage(
+                        self_id=3582446171, 
+                        type='GroupMessage', 
+                        messageChain = msg, 
+                        sender=sender , 
+                        to_me=True
+                        )
+                msg2: MessageChain = Message("同意")
+                event2: GroupMessage = GroupMessage(
+                        self_id=3582446171, 
+                        type='GroupMessage', 
+                        messageChain = msg, 
+                        sender=sender , 
+                        to_me=True
+                        )
+
+
+                ctx.receive_event(bot, event)
+                ctx.should_call_send(event, "", True)
+                ctx.should_finished()
+
+        assert lovers_dao.findloversByQQ(str(qq)) == None
+
+
+            
+
+
 
 
 

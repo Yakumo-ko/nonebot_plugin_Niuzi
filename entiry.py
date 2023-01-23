@@ -2,8 +2,8 @@ from pydantic import BaseModel
 
 
 class Lovers(BaseModel):
-    qq: str
-    target: str
+    qq: int 
+    target: int 
 
 """
 class NiuZi(BaseModel):

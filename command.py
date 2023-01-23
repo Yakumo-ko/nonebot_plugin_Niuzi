@@ -19,6 +19,7 @@ subcmds: Dict[str, Any] = {
         "我的牛子": InfoCmd,
         "改牛子名": NameCmd,
         "比划比划": PKCmd,
+        "我要分手": LeaveCmd,
         }
 
 
@@ -34,7 +35,12 @@ async def checkPerm(matcher: Matcher, stats: T_State, event: GroupMessage) -> Pe
     return Permission(_)
 
 @matcher.handle()
-async def info (matchar: Matcher, event: GroupMessage, message: Message = CommandArg()) -> None:
+async def info (
+        matchar: Matcher, 
+        event: GroupMessage, 
+        stats: T_State,
+        message: Message = CommandArg()
+        ) -> None:
     args = message.extract_plain_text()
 
     if len(args) == 0:
@@ -47,11 +53,23 @@ async def info (matchar: Matcher, event: GroupMessage, message: Message = Comman
             cmd_list.remove('')
 
             cmd: BaseSubCmd = item[1](item[0])
-            res: str = await cmd.execute(cmd_list, event)
-            await matchar.finish(res)
+            res: str = await cmd.execute(stats, cmd_list, event)
+
+            if cmd.hasRequest:
+                await matcher.send(res)
+            else:
+                await matchar.finish(res)
             
 @matcher.receive()
-async def request(matcher: Matcher, event = Received(), message: Message = CommandArg()):
-    args = message.extract_plain_text()
+async def request(matcher: Matcher, stats: T_State, event: GroupMessage = Received()) :
+    msg = event.get_message().extract_plain_text()
+    res = await stats.get("subcmd")("").execute(stats, msg, event)
+    await matcher.finish(res)
+
+    
+
+        
+
+
     
 
