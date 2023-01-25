@@ -5,9 +5,7 @@ from typing_extensions import override
 from nonebot import get_driver, get_bot
 
 from nonebot.adapters.mirai2.event import GroupMessage
-from nonebot.adapters import Message
 from nonebot.adapters.mirai2.message import MessageSegment, MessageType, MessageChain
-from nonebot.permission import Permission
 from nonebot.typing import T_State
 from nonebot.matcher import Matcher
 
@@ -18,7 +16,7 @@ from .msg import Msg, setting
 from .entiry import *
 from .dao import * 
 from .event import *
-from .utils.Sex import Sex
+from .utils.Sex import Sex, CDType
 
 plugin_config = Config.parse_obj(get_driver().config.nonebot_plugin_niuzi)
 
@@ -267,20 +265,22 @@ class PKCmd(BaseSubCmd):
             )
 
     def __updateCd(self, sender: str, target: str) -> None:
-        self.cd_dao.deleteByQQ(sender)
-        self.cd_dao.deleteByQQ(target)
+        self.cd_dao.deleteByQQ(sender, CDType.pk)
+        self.cd_dao.deleteByQQ(target, CDType.pk)
         self.cd_dao.insert(CoolDown.parse_obj({
                 "qq": sender,
-                "timestampe": datetime.datetime.now().timestamp()
+                "timestampe": datetime.datetime.now().timestamp(),
+                "type": CDType.pk
             }))
 
         self.cd_dao.insert(CoolDown.parse_obj({
                 "qq": target,
-                "timestampe": datetime.datetime.now().timestamp()
+                "timestampe": datetime.datetime.now().timestamp(),
+                "type": CDType.pk
             }))
 
     def __getCd(self, qq: str) -> datetime.timedelta:
-        cool_down: Union[CoolDown, None] = self.cd_dao.findCoolDownByQQ(qq)
+        cool_down = self.cd_dao.findCoolDownByQQ(qq, CDType.pk)
         if cool_down == None:
             return datetime.timedelta(seconds=99999999)
         old = datetime.datetime.fromtimestamp(cool_down.timestampe)
@@ -293,7 +293,6 @@ class PKCmd(BaseSubCmd):
             if seg['type'] == MessageType.AT:
                 return str(seg['target'])
         return None
-
 
 class TopCmd(BaseSubCmd):
     @override
@@ -354,8 +353,6 @@ class TopCmd(BaseSubCmd):
             res.append(f"{i}: "+ tmp)
             i+=1
 
-
-
 class LeaveCmd(BaseSubCmd):
     
     def __init__(self, cmd_prefix: str) -> None:
@@ -410,16 +407,167 @@ class LeaveCmd(BaseSubCmd):
         return False
 
 
+class LoverInfoCmd(BaseSubCmd):
 
-    def getInfo(self, qq: str) -> str:
-        niuzi = self.niuzi_dao.findNiuziByQQ(qq)
+    @override
+    def desrcibe(self) -> str:
+        return "查看你的对象的牛子信息"
 
-        return msg.status.format(
-                    qq = qq,
+    async def execute(self, 
+                matcher: Matcher, 
+                stats: T_State, 
+                event: GroupMessage, 
+                args: str
+            ) -> None:
+        lover = self.lovers_dao.findloversByQQ(event.get_user_id())
+        if lover == None:
+            await matcher.finish(msg.no_lover)
+        niuzi = self.niuzi_dao.findNiuziByQQ(str(lover.target))
+        await matcher.finish(msg.status.format(
+                    qq = niuzi.qq,
                     qq_name = "",
                     name = niuzi.name,
                     sex = niuzi.sex,
                     length = niuzi.length
-                )
+            ))
+        
 
-    
+class LoveRequestCmd(BaseSubCmd):
+    @override
+    def desrcibe(self) -> str:
+        return "和别人搞对象"
+
+    @override
+    def useage(self) -> str:
+        return self.cmd_prefix + " <@target>"
+
+    async def execute(self, 
+                matcher: Matcher, 
+                stats: T_State, 
+                event: GroupMessage, 
+                args: str
+            ) -> None:
+        sender = event.get_user_id()
+        if self.lovers_dao.findloversByQQ(sender) != None:
+            await matcher.finish(msg.lover.get.has_lover)
+
+        target = self.__hasAT(event)
+        if target == None:
+            await matcher.finish(msg.lover.get.has_lover)
+
+        if target == sender:
+            await matcher.finish(msg.lover.get.self)
+
+        if self.lovers_dao.findloversByQQ(target) != None:
+            await matcher.finish(msg.lover.get.fail)
+
+        if self.niuzi_dao.findNiuziByQQ(target) == None:
+            await matcher.finish(msg.lover.get.target_no_niuzi)
+        
+        await matcher.send(
+                msg.lover.request.send.format(
+                    target = target,
+                    sender = sender
+            ) 
+        )
+
+        stats.update({
+               "sender": sender,
+               "target": target,
+               "subcmd": self
+           })
+
+    @override
+    async def request(self, matcher: Matcher, stats: T_State, event : GroupMessage
+            ) -> None:
+       if event.get_plaintext() == "同意":
+            assert stats.get('sender') != None
+            self.lovers_dao.deleteByQQ(stats.get('sender'))
+            await matcher.finish(msg.leave.request.agree)
+       await matcher.finish(msg.leave.request.disagree)
+
+    @override
+    async def checkPerm(self, matcher: Matcher, stats: T_State, event: GroupMessage
+            ) -> bool:
+        if stats.get("target") == event.get_user_id():
+            return True
+        return False
+
+
+
+
+    def __hasAT(self, 
+                event: GroupMessage
+        ) -> Union[str, None]:
+        for seg in event.get_message().export():
+            if seg['type'] == MessageType.AT:
+                return str(seg['target'])
+        return None
+
+        
+
+class DoiCmd(BaseSubCmd):
+    @override
+    def desrcibe(self) -> str:
+        return "和对象贴贴!"
+
+    @override
+    async def execute(self, matcher: Matcher, stats: T_State, event: GroupMessage, args: str) -> None:
+        lover = self.lovers_dao.findloversByQQ(event.get_user_id())
+        if lover == None:
+            await matcher.finish(msg.doi.no_lover)
+
+        cd = plugin_config.doi_cd
+        sender = self.__getCd(str(lover.qq)) 
+        target = self.__getCd(str(lover.target)) 
+        if sender.seconds <= cd and target.seconds <= cd:
+            await matcher.finish(msg.doi.fail.format(cd - sender.seconds))
+
+        length = random.randrange(1, 121) * random.random()
+        self.__updateLenght(str(lover.qq), str(lover.target), length)
+        self.__updateCd(str(lover.qq), str(lover.target))
+        await matcher.finish(msg.doi.success.format(
+                length = length,
+                msg = "", # TODO
+                second = plugin_config.doi_cd
+            ))
+
+    def __getCd(self, qq: str) -> datetime.timedelta:
+        cool_down = self.cd_dao.findCoolDownByQQ(qq, CDType.doi)
+        if cool_down == None:
+            return datetime.timedelta(seconds=99999999)
+        old = datetime.datetime.fromtimestamp(cool_down.timestampe)
+        return datetime.datetime.now() - old
+
+    def __updateLenght(self, sender: str, target: str, length: float) -> None:
+        niuzi = self.niuzi_dao.findNiuziByQQ(sender)
+        niuzi.length += length
+        self.niuzi_dao.update(niuzi)
+        niuzi = self.niuzi_dao.findNiuziByQQ(target)
+        niuzi.length += length
+        self.niuzi_dao.update(niuzi)
+
+
+    def __updateCd(self, sender: str, target: str) -> None:
+        self.cd_dao.deleteByQQ(sender, CDType.doi)
+        self.cd_dao.deleteByQQ(target, CDType.doi)
+        self.cd_dao.insert(CoolDown.parse_obj({
+                "qq": sender,
+                "timestampe": datetime.datetime.now().timestamp(),
+                "type": CDType.doi
+            }))
+
+        self.cd_dao.insert(CoolDown.parse_obj({
+                "qq": target,
+                "timestampe": datetime.datetime.now().timestamp(),
+                "type": CDType.doi
+            }))
+
+
+# //TODO
+class ReuqestCmd(BaseSubCmd):
+    pass
+
+# //TODO
+class Admin(BaseSubCmd):
+    pass

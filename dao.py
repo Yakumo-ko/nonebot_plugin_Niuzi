@@ -31,7 +31,7 @@ class LoversDAO:
         self.sql.executeNotQuerySql(self.__CREAT_LOVERS)
 
     def findloversByQQ(self, qq: str) -> Union[Lovers, None]:
-        sql: str = "select * from `{tb_name}` where `qq`='{qq}'".format(
+        sql: str = "select * from `{tb_name}` where `qq`='{qq}' or `target`='{qq}'".format(
                     tb_name = self.__LOVERS,
                     qq = qq
                 )
@@ -179,7 +179,7 @@ class CoolDownDAO:
 
     __CREAT_COOLDOWN = """\
             CREATE TABLE IF NOT EXISTS `{table_name}` (
-                `qq` BIGINT UNIQUE NOT NULL,`timestampe` BIGINT     
+                `qq` BIGINT UNIQUE NOT NULL,`timestampe` BIGINT, `type` INT NOT NULL     
             )
             """.format(table_name = __TB_COOLDOWN)
 
@@ -194,9 +194,10 @@ class CoolDownDAO:
 
         self.sql.executeNotQuerySql(self.__CREAT_COOLDOWN)
 
-    def findCoolDownByQQ(self, qq: str) -> Union[CoolDown, None]:
-        sql: str = "select * from `{tb_name}` where `qq`='{qq}'".format(
+    def findCoolDownByQQ(self, qq: str, type: int) -> Union[CoolDown, None]:
+        sql: str = "select * from `{tb_name}` where `qq`='{qq}' and 'type' = '{type}'".format(
                 tb_name = self.__TB_COOLDOWN,
+                type = type,
                 qq = qq
                 )
 
@@ -207,20 +208,21 @@ class CoolDownDAO:
     def insert(self, cd: CoolDown) -> bool:
         sql: str =  "INSERT INTO `{table_name}` \
                         (qq, timestampe) VALUE\
-                        ({qq}, {time})".format(
+                        ({qq}, {time}, {type})".format(
                                 qq = cd.qq,
                                 time = cd.timestampe,
+                                type= cd.type,
                                 table_name = self.__TB_COOLDOWN
                             )
 
         return self.sql.executeNotQuerySql(sql)
 
-    def deleteByQQ(self, qq: str) -> bool:
-        sql: str = "DELETE  FROM `{table_name}` WHERE `qq`= {qq}".format(
+    def deleteByQQ(self, qq: str, type: int) -> bool:
+        sql: str = "DELETE  FROM `{table_name}` WHERE `qq`= {qq} and 'type'={type}".format(
                     qq = qq,
+                    type = type,
                     table_name = self.__TB_COOLDOWN
                 )
 
         return self.sql.executeNotQuerySql(sql)
-
 

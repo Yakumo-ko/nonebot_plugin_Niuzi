@@ -22,4 +22,7 @@ class Sex(IntEnum):
         return res
 
 
-
+@unique
+class CDType(IntEnum):
+    pk = 0
+    doi = 1

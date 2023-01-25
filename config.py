@@ -7,6 +7,7 @@ class Config(BaseModel, extra = Extra.ignore):
     defalut_nick_name: str
     change2woman: int 
     pk_cd: int
+    doi_cd: int
     host: str 
     user: str
     password: str

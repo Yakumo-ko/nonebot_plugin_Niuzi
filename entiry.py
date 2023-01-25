@@ -5,14 +5,6 @@ class Lovers(BaseModel):
     qq: int 
     target: int 
 
-"""
-class NiuZi(BaseModel):
-    owner: str
-    name: str
-    length: float
-    sex: int
-"""
-
 class NiuZi(BaseModel):
     qq: int
     name: str
@@ -24,4 +16,5 @@ class NiuZi(BaseModel):
 class CoolDown(BaseModel):
     qq: int
     timestampe: int
+    type: int
  
