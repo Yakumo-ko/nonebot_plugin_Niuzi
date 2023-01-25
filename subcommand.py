@@ -7,7 +7,9 @@ from nonebot import get_driver, get_bot
 from nonebot.adapters.mirai2.event import GroupMessage
 from nonebot.adapters import Message
 from nonebot.adapters.mirai2.message import MessageSegment, MessageType, MessageChain
+from nonebot.permission import Permission
 from nonebot.typing import T_State
+from nonebot.matcher import Matcher
 
 import datetime
 
@@ -25,7 +27,6 @@ msg = Msg(**setting)
 class BaseSubCmd(ABC):
     
     def __init__(self, cmd_prefix: str) -> None:
-        self.hasRequest = False
         self.cmd_prefix = cmd_prefix
 
         self.niuzi_dao = NiuziDAO()
@@ -35,60 +36,61 @@ class BaseSubCmd(ABC):
     def desrcibe(self) -> str:
         return "null"
     
-    @abstractmethod
     def useage(self) -> str:
-        pass
+        return "null"
+        
 
     @abstractmethod
-    async def execute(
-                self, 
+    async def execute(self, 
+                matcher: Matcher,
                 stats: T_State, 
-                args: list, 
-                event: GroupMessage
-            ) -> Any:
+                event: GroupMessage,
+                args: str
+            ) -> None:
         pass
+
+    async def request(self,
+                matcher: Matcher,
+                stats: T_State, 
+                event: GroupMessage,
+              ) -> None:
+        pass
+
+    async def checkPerm(self,
+                matcher: Matcher,
+                stats: T_State, 
+                event: GroupMessage,
+            ) -> bool:
+        return True
 
 class InfoCmd(BaseSubCmd):
-
     @override
     def desrcibe(self) -> str:
         return "查看你牛子"
 
     @override
-    def useage(self) -> str:
-        return "女性"
-
-    @override
     async def execute(self, 
+                matcher: Matcher,
                 stats: T_State,
-                args: list, 
-                event: GroupMessage
-            ) -> str:
-        return self.getNiuziInfo(
-                    event.get_user_id(),
-                    qq_name = event.sender.name
+                event: GroupMessage,
+                args: str 
+            ) -> None:
+        niuzi: Union[NiuZi, None]= self.niuzi_dao.findNiuziByQQ(
+                event.get_user_id())
+        if niuzi == None:
+            await matcher.finish(msg.info.no_niuzi)
+
+        await matcher.finish(msg.info.niuzi_info.format(
+                        qq = niuzi.qq,
+                        name = niuzi.name,
+                        sex =  self.__toChinese(niuzi.sex),
+                        length = niuzi.length,
+                        qq_name = event.sender.name 
+                    )
                 )
 
     def __toChinese(self, sex: int) -> str:
         return '女' if sex == Sex.FEMALE else '男'
-
-    def getNiuziInfo(self, qq, qq_name) -> str:
-        """
-        Note: The str return include qq, name, sex end length
-        """
-        niuzi: Union[NiuZi, None]= self.niuzi_dao.findNiuziByQQ(qq)
-        if niuzi == None:
-            return msg.info.no_niuzi
-
-        res = msg.info.niuzi_info.format(
-                qq = niuzi.qq,
-                name = niuzi.name,
-                sex =  self.__toChinese(niuzi.sex),
-                length = niuzi.length,
-                qq_name = qq_name
-                )
-
-        return  res
 
     def getAll(self) -> Union[List[str], None]:
         niuzi_list = self.niuzi_dao.getAll()
@@ -111,77 +113,64 @@ class InfoCmd(BaseSubCmd):
             res.append(f"{i}: "+ tmp)
             i+=1
 
-
-
-
-
 class ChangeSexCmd(BaseSubCmd):
 
     @override
-    def useage(self) -> str:
-        return self.cmd_prefix
-
-    def __change2Woman(self, qq: str, length: int = 50) -> str:
-        niuzi: Union[NiuZi, None] = self.niuzi_dao.findNiuziByQQ(qq)
-        if niuzi == None:
-            return msg.change_sex.no_niuzi
-
-        if niuzi.sex == Sex.FEMALE:
-            return msg.change_sex.already_woman
-        else:
-            niuzi.length -= length 
-            niuzi.sex = Sex.FEMALE
-            self.niuzi_dao.update(niuzi) 
-
-            return msg.change_sex.success.format(length)
-
-    def __change2Man(self, qq: str) -> str:
-        assert False
-
+    def desrcibe(self) -> str:
+        return "变为女孩子"
 
     @override
     async def execute(self, 
-                stats: T_State,
-                args: list, 
-                event: GroupMessage
-            ) -> str:
-        return self.__change2Woman(event.get_user_id())
+                matcher: Matcher,
+                stats: T_State, 
+                event: GroupMessage,
+                args: str
+            ) -> None:
+        niuzi: Union[NiuZi, None] = self.niuzi_dao.findNiuziByQQ(
+                event.get_user_id()
+                )
+        if niuzi == None:
+            await matcher.finish(msg.change_sex.no_niuzi)
+
+        if niuzi.sex == Sex.FEMALE:
+            await matcher.finish(msg.change_sex.already_woman)
+        else:
+            niuzi.length -= plugin_config.change2woman 
+            niuzi.sex = Sex.FEMALE
+            self.niuzi_dao.update(niuzi) 
+
+            await matcher.finish(
+                    msg.change_sex.success.format(plugin_config.change2woman)
+                    )
 
 class GetCmd(BaseSubCmd):
     
     @override
-    def useage(self) -> str:
-        return self.cmd_prefix
+    def desrcibe(self) -> str:
+        return "获取新牛子" 
 
     @override
     async def execute(self, 
-                stats: T_State,
-                args: list, 
-                event: GroupMessage
-            ) -> str:
-        return self.getNewNiuzi(
-                    event.get_user_id(), 
-                    plugin_config.defalut_nick_name
-                )
-        
-    def getNewNiuzi(self, qq: str, name: str) -> str:
+                matcher: Matcher,
+                stats: T_State, 
+                event: GroupMessage,
+                args: str
+            ) -> None:
+        qq = event.get_user_id()
         if self.niuzi_dao.findNiuziByQQ(qq) != None:
-            return msg.get.has_niuzi
+            await matcher.finish(msg.get.has_niuzi)
 
-        niuzi = self.__createNiuzi(qq, name)
-        self.niuzi_dao.insert(niuzi)
-        return msg.get.success
-
-    def __createNiuzi(self, qq, name: str) -> NiuZi:
-        values = {
-                "qq": qq,
-                "name": name,
-                "length": random.randint(0, 10),
-                "sex": random.randint(Sex.getMin(), Sex.getMax()),
-                "level": 0,
-                "points": 0
-                }
-        return NiuZi(**values)
+        self.niuzi_dao.insert(
+                NiuZi.parse_obj({
+                    "qq": qq,
+                    "name": plugin_config.defalut_nick_name,
+                    "length": random.randint(0, 10),
+                    "sex": random.randint(Sex.getMin(), Sex.getMax()),
+                    "level": 0,
+                    "points": 0
+                })
+            )
+        await matcher.finish(msg.get.success)
 
 class NameCmd(BaseSubCmd):
 
@@ -195,37 +184,32 @@ class NameCmd(BaseSubCmd):
 
     @override
     async def execute(self, 
-                stats: T_State,
-                args: list, 
-                event: GroupMessage
-            ) -> str:
-        name = " ".join(args)
-        return self.changeName(event.get_user_id(), name) 
-
-    def changeName(self, qq: str, new_name: str) -> str:
-        if len(new_name) == 0:
-            return msg.no_arg
+                matcher: Matcher,
+                stats: T_State, 
+                event: GroupMessage,
+                args: str
+            ) -> None:
+        if len(args) == 0:
+            await matcher.finish(msg.no_arg)
         
-        if len(new_name) > 10:
-            return msg.name.name_too_long
+        if len(args) > 10:
+            await matcher.finish(msg.name.name_too_long)
 
-        niuzi: Union[NiuZi, None] = self.niuzi_dao.findNiuziByQQ(qq)
+        niuzi: Union[NiuZi, None] = self.niuzi_dao.findNiuziByQQ(
+                event.get_user_id()
+                )
         if niuzi == None:
-            return msg.no_niuzi
+            await matcher.finish(msg.no_niuzi)
 
-        niuzi.name = new_name
+        niuzi.name = args 
         self.niuzi_dao.update(niuzi)
-        return msg.name.success
+
+        await matcher.finish(msg.name.success)
 
 class PKCmd(BaseSubCmd):
 
     def __init__(self, cmd_prefix: str) -> None:
         super().__init__(cmd_prefix)
-        self.events = [
-                    PKLost,
-                    PKWin,
-                    PKAllLost
-                ]
 
     @override
     def desrcibe(self) -> str:
@@ -237,44 +221,63 @@ class PKCmd(BaseSubCmd):
 
     @override
     async def execute(self, 
-                stats: T_State,
-                args: list, 
-                event: GroupMessage
-            ) -> str:
-        for seg in event.get_message().export():
-            if seg['type'] == MessageType.AT:
+                matcher: Matcher,
+                stats: T_State, 
+                event: GroupMessage,
+                args: str
+            ) -> None:
+        sender = event.get_user_id()
+        niuzi: Union[NiuZi, None] = self.niuzi_dao.findNiuziByQQ(sender)
+        if niuzi == None:
+            await matcher.finish(msg.no_niuzi)
 
-                # pytest likely can't get bot here
-                """
-                bot: Bot = get_bot()
-                member= await bot.member_profile(
-                            target = event.sender.group.id, 
-                            member_id = seg['target'] 
-                        )
+        target = self.__hasAT(event) 
+        if target == None:
+            await matcher.finish(msg.pk.no_args)
 
-                return PKService().pk(
-                    event.get_user_id(),
-                    event.sender.name,
-                    seg['target'],
-                    member["nickname"],
-                    plugin_config.pk_cd
-                        )
-                """
-                return self.pk(
-                    event.get_user_id(),
-                    event.sender.name,
-                    str(seg['target']),
-                    "none",
-                    plugin_config.pk_cd
-                        )
+        if sender == target:
+            await matcher.finish(msg.pk.same)
 
-        return self.pk(
-                    event.get_user_id(), 
-                    event.sender.name, 
-                    None, 
-                    None, 
-                    plugin_config.pk_cd
+        time: datetime.timedelta = self.__getCd(sender)
+        if time.seconds < plugin_config.pk_cd:
+            await matcher.finish(
+                    msg.pk.source_in_cd.format(
+                        plugin_config.pk_cd - time.seconds
+                        )
+                    )
+
+        target_niuzi: Union[NiuZi, None] = self. \
+                        niuzi_dao.findNiuziByQQ(target)
+        if target_niuzi == None:
+            await matcher.finish(msg.pk.target_no_niuzi)
+
+        time: datetime.timedelta = self.__getCd(target)
+        if time.seconds < plugin_config.pk_cd:
+            await matcher.finish(
+                    msg.pk.target_in_cd.format(
+                        plugin_config.pk_cd - time.seconds
+                    )
                 )
+
+        self.__updateCd(sender, target)
+
+        pk_event = getPkevent()
+        await matcher.finish(
+                pk_event().execute(niuzi, "none", target_niuzi, "none")         
+            )
+
+    def __updateCd(self, sender: str, target: str) -> None:
+        self.cd_dao.deleteByQQ(sender)
+        self.cd_dao.deleteByQQ(target)
+        self.cd_dao.insert(CoolDown.parse_obj({
+                "qq": sender,
+                "timestampe": datetime.datetime.now().timestamp()
+            }))
+
+        self.cd_dao.insert(CoolDown.parse_obj({
+                "qq": target,
+                "timestampe": datetime.datetime.now().timestamp()
+            }))
 
     def __getCd(self, qq: str) -> datetime.timedelta:
         cool_down: Union[CoolDown, None] = self.cd_dao.findCoolDownByQQ(qq)
@@ -283,57 +286,13 @@ class PKCmd(BaseSubCmd):
         old = datetime.datetime.fromtimestamp(cool_down.timestampe)
         return datetime.datetime.now() - old
 
-    def __targetEvent(self, 
-                      niuzi: NiuZi, 
-                      qq_name: str, 
-                      target_niuzi: NiuZi, 
-                      qq_name_target: str) -> str:
-
-        event: PKEvent = random.choice(self.events)
-        return event().execute(niuzi, qq_name, target_niuzi, qq_name_target)
-            
-    def pk(self, 
-           sender_qq: str, 
-           sender_name: str, 
-           target_qq: Union[str, None], 
-           name_target: Union[str, None],
-           cd: int) -> str:
-
-        niuzi: Union[NiuZi, None] = self.niuzi_dao.findNiuziByQQ(sender_qq)
-        if niuzi == None:
-            return msg.no_niuzi
-
-        if target_qq == None:
-            return msg.pk.no_args
-
-        if sender_qq == target_qq:
-            return msg.pk.same
-
-        time: datetime.timedelta = self.__getCd(sender_qq)
-        if time.seconds < cd:
-            return msg.pk.source_in_cd.format(cd - time.seconds)
-
-        target_niuzi: Union[NiuZi, None] = self.niuzi_dao.findNiuziByQQ(target_qq)
-        if target_niuzi == None:
-            return msg.pk.target_no_niuzi
-
-        time: datetime.timedelta = self.__getCd(target_qq)
-        if time.seconds < cd:
-            return msg.pk.target_in_cd.format(cd - time.seconds)
-
-        self.cd_dao.deleteByQQ(sender_qq)
-        self.cd_dao.deleteByQQ(target_qq)
-        self.cd_dao.insert(CoolDown.parse_obj({
-                "qq": sender_qq,
-                "timestampe": datetime.datetime.now().timestamp()
-            }))
-
-        self.cd_dao.insert(CoolDown.parse_obj({
-                "qq": target_qq,
-                "timestampe": datetime.datetime.now().timestamp()
-            }))
-
-        return self.__targetEvent(niuzi, sender_name, target_niuzi, name_target)         
+    def __hasAT(self, 
+                event: GroupMessage
+        ) -> Union[str, None]:
+        for seg in event.get_message().export():
+            if seg['type'] == MessageType.AT:
+                return str(seg['target'])
+        return None
 
 
 class TopCmd(BaseSubCmd):
@@ -342,30 +301,25 @@ class TopCmd(BaseSubCmd):
         return "查看牛子排行榜"
 
     @override
-    def useage(self) -> str:
-        return "none"
-
-    @override
     async def execute(self, 
-                stats: T_State,
-                args: list, 
-                event: GroupMessage
-            ) -> MessageChain:
+                matcher: Matcher,
+                stats: T_State, 
+                event: GroupMessage,
+                args: str
+            ) -> None:
         res: Union[List[str], None] = self.getAll() 
 
         bot_info = await get_bot().bot_pro_file()
 
         if res == None:
-            return MessageChain(
-                    [MessageSegment.plain("太可惜了，本群还没有人领养过牛子")]
-                    )
+            await matcher.finish("太可惜了，本群还没有人领养过牛子")
 
         node_list = MessageChain(
                 [MessageSegment.plain(msg) for msg in res] 
             )
            
 
-        return MessageChain([MessageSegment.forward(
+        await matcher.finish(MessageChain([MessageSegment.forward(
                         "",
                         int(get_bot().self_id),
                         int(datetime.datetime.now().timestamp()),
@@ -374,6 +328,7 @@ class TopCmd(BaseSubCmd):
                         233
                     )
                 ])
+            )
 
     def __toChinese(self, sex: int) -> str:
         return '女' if sex == Sex.FEMALE else '男'
@@ -405,55 +360,57 @@ class LeaveCmd(BaseSubCmd):
     
     def __init__(self, cmd_prefix: str) -> None:
         super().__init__(cmd_prefix)
-        self.hasRequest = True
 
     @override
     def desrcibe(self) -> str:
         return "和你的对象分手"
 
     @override
-    def useage(self) -> str:
-        return "none"
+    async def execute(self, 
+                matcher: Matcher,
+                stats: T_State, 
+                event: GroupMessage,
+                args: str
+            ) -> None:
+        lover = self.lovers_dao.findloversByQQ(
+                event.get_user_id())
 
-    @override
-    async def execute(self, stats: T_State, args: list, event: GroupMessage) -> str:
-       target_qq = self.getLover(event.get_user_id())
-       if target_qq == None:
-           return msg.no_lover
+        if lover == None:
+            await matcher.finish(msg.no_lover)
 
-       stats.update({
-           "qq": event.get_user_id(),
-           "target_qq": target_qq,
-           "request": LeaveCmd
+
+        await matcher.send(
+                msg.leave.request.send.format(
+                    target = lover.target,
+                    sender = lover.qq
+                )
+            )
+
+        stats.update({
+               "sender": lover.qq,
+               "target": lover.target,
+               "subcmd": self
            })
 
-       return self.leaveRequest(event.get_user_id())
 
-    async def request(self, stats: T_State, event : GroupMessage) -> str:
+    @override
+    async def request(self, matcher: Matcher, stats: T_State, event : GroupMessage
+            ) -> None:
        if event.get_plaintext() == "同意":
-           self.leaveAgree(stats.get("qq"))
-           return msg.leave.request.agree
-       return msg.leave.request.disagree
-        
+            assert stats.get('sender') != None
+            self.lovers_dao.deleteByQQ(stats.get('sender'))
+            await matcher.finish(msg.leave.request.agree)
+       await matcher.finish(msg.leave.request.disagree)
 
-    def getLover(self, qq: str) -> Union[str, None]:
-        lover: Union[Lovers, None] = self.lovers_dao.findloversByQQ(qq)
-        return lover.target if lover != None else None
+    @override
+    async def checkPerm(self, matcher: Matcher, stats: T_State, event: GroupMessage
+            ) -> bool:
+        if stats.get("target") == event.get_user_id():
+            return True
+        return False
 
-    def leaveRequest(self, qq: str) -> str:
-        lover: Lovers = self.lovers_dao.findloversByQQ(qq)
 
-        assert lover != None
 
-        return msg.leave.request.send.format(
-                target = lover.target,
-                sender = lover.qq
-                )
-
-    def leaveAgree(self, qq: str) -> None:
-        self.lovers_dao.deleteByQQ(qq)
-
-     
     def getInfo(self, qq: str) -> str:
         niuzi = self.niuzi_dao.findNiuziByQQ(qq)
 

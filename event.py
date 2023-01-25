@@ -95,7 +95,14 @@ class PKAllLost(PKEvent):
                     lenght = random_len
                 )
 
+pk_event = [
+            PKLost,
+            PKWin,
+            PKAllLost
+        ]
 
+def getPkevent() -> object:
+    return random.choice(pk_event)
 
 
 

@@ -27,44 +27,36 @@ matcher = on_command("niuzi", rule=to_me(), expire_time=timedelta(seconds=360))
 
 @matcher.permission_updater
 async def checkPerm(matcher: Matcher, stats: T_State, event: GroupMessage) -> Permission:
+    assert stats.get('subcmd') != None
     async def _():
-        if stats.get("target_qq") == event.get_user_id():
-            return True
-        return False
+        return stats.get('subcmd').checkPerm(matcher, stats, event)
 
     return Permission(_)
 
 @matcher.handle()
 async def info (
-        matchar: Matcher, 
+        matcher: Matcher, 
         event: GroupMessage, 
         stats: T_State,
         message: Message = CommandArg()
         ) -> None:
-    args = message.extract_plain_text()
+    text = message.extract_plain_text()
 
-    if len(args) == 0:
-        await matchar.finish("参数捏")
+    if len(text) == 0:
+        await matcher.finish("参数捏")
+    args = text.split(' ')
 
     for item in subcmds.items():
-        if args.startswith(item[0]) :
-            args = args.replace(item[0], "")
-            cmd_list = args.split(' ') 
-            cmd_list.remove('')
-
+        if args[0] == item[0] :
+            args = text.replace(args[0], '').strip()
             cmd: BaseSubCmd = item[1](item[0])
-            res: str = await cmd.execute(stats, cmd_list, event)
-
-            if cmd.hasRequest:
-                await matcher.send(res)
-            else:
-                await matchar.finish(res)
+            await cmd.execute(matcher, stats, event, args)
             
 @matcher.receive()
 async def request(matcher: Matcher, stats: T_State, event: GroupMessage = Received()) :
-    msg = event.get_message().extract_plain_text()
-    res = await stats.get("subcmd")("").execute(stats, msg, event)
-    await matcher.finish(res)
+    assert stats.get('subcmd') != None
+    await stats.get('subcmd').request(matcher, stats, event)
+
 
     
 
