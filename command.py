@@ -1,7 +1,5 @@
 from datetime import timedelta
-from typing import Type, Dict, Any
-from async_asgi_testclient.testing import receive
-from nonebot import get_driver
+from typing import Dict, Any
 from nonebot.adapters.mirai2.event import GroupMessage
 from nonebot.adapters import Message
 from nonebot.matcher import Matcher
@@ -20,18 +18,11 @@ subcmds: Dict[str, Any] = {
         "改牛子名": NameCmd,
         "比划比划": PKCmd,
         "我要分手": LeaveCmd,
+        "搞对象": LoveRequestCmd
         }
 
 
 matcher = on_command("niuzi", rule=to_me(), expire_time=timedelta(seconds=360))
-
-@matcher.permission_updater
-async def checkPerm(matcher: Matcher, stats: T_State, event: GroupMessage) -> Permission:
-    assert stats.get('subcmd') != None
-    async def _():
-        return stats.get('subcmd').checkPerm(matcher, stats, event)
-
-    return Permission(_)
 
 @matcher.handle()
 async def info (
@@ -51,10 +42,17 @@ async def info (
             args = text.replace(args[0], '').strip()
             cmd: BaseSubCmd = item[1](item[0])
             await cmd.execute(matcher, stats, event, args)
+
+@matcher.permission_updater
+async def checkPerm(matcher: Matcher, stats: T_State) -> Permission:
+    assert stats.get('subcmd') != None
+    async def _(event: GroupMessage):
+        return await stats.get('subcmd').checkPerm(matcher, stats, event)
+    
+    return Permission(_)
             
 @matcher.receive()
 async def request(matcher: Matcher, stats: T_State, event: GroupMessage = Received()) :
-    assert stats.get('subcmd') != None
     await stats.get('subcmd').request(matcher, stats, event)
 
 

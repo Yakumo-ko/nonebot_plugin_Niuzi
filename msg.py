@@ -63,10 +63,7 @@ setting = {
            },
 
         "request": {
-          "send": """\
-                {target} 你好，{sender}想跟你搞对象
-                输入命令「处理请求 搞对象 同意/不同意
-                """,
+          "send": "{target} 你好，{sender}想跟你搞对象\n输入命令「处理请求 搞对象 同意/不同意",
           "agree": "{sender} 恭喜！！！！对方同意了你的请求",
           "disagree": "{sender} 真遗憾……对方没有同意你的请求",
           "exists": "已存在请求，可能是别人发的",
@@ -76,10 +73,7 @@ setting = {
     "leave": {
         "no_lover": "你没对象你分哪门子手？",
         "request": {
-            "send": """\
-                {target} 你好，{sender} 想跟你分手
-                输入命令「处理请求 分手 同意/不同意」
-                """,
+            "send": "{target} 你好，{sender} 想跟你分手\n输入命令「处理请求 分手 同意/不同意」",
             "agree": "{0} 对方同意了你的分手请求……",
             "disagree": "{0} 对方没有同意你的请求"
         }

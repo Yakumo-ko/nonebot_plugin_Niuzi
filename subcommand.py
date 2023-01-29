@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from typing_extensions import override
 
 from nonebot import get_driver, get_bot
+from nonebot.adapters import Message, MessageTemplate
 
 from nonebot.adapters.mirai2.event import GroupMessage
 from nonebot.adapters.mirai2.message import MessageSegment, MessageType, MessageChain
@@ -23,7 +24,6 @@ plugin_config = Config.parse_obj(get_driver().config.nonebot_plugin_niuzi)
 msg = Msg(**setting) 
 
 class BaseSubCmd(ABC):
-    
     def __init__(self, cmd_prefix: str) -> None:
         self.cmd_prefix = cmd_prefix
 
@@ -112,7 +112,6 @@ class InfoCmd(BaseSubCmd):
             i+=1
 
 class ChangeSexCmd(BaseSubCmd):
-
     @override
     def desrcibe(self) -> str:
         return "变为女孩子"
@@ -142,7 +141,6 @@ class ChangeSexCmd(BaseSubCmd):
                     )
 
 class GetCmd(BaseSubCmd):
-    
     @override
     def desrcibe(self) -> str:
         return "获取新牛子" 
@@ -171,7 +169,6 @@ class GetCmd(BaseSubCmd):
         await matcher.finish(msg.get.success)
 
 class NameCmd(BaseSubCmd):
-
     @override
     def desrcibe(self) -> str:
         return "改你牛子的名字, 支持空格, 最长10个字"
@@ -205,7 +202,6 @@ class NameCmd(BaseSubCmd):
         await matcher.finish(msg.name.success)
 
 class PKCmd(BaseSubCmd):
-
     def __init__(self, cmd_prefix: str) -> None:
         super().__init__(cmd_prefix)
 
@@ -354,7 +350,6 @@ class TopCmd(BaseSubCmd):
             i+=1
 
 class LeaveCmd(BaseSubCmd):
-    
     def __init__(self, cmd_prefix: str) -> None:
         super().__init__(cmd_prefix)
 
@@ -375,17 +370,17 @@ class LeaveCmd(BaseSubCmd):
         if lover == None:
             await matcher.finish(msg.no_lover)
 
-
-        await matcher.send(
-                msg.leave.request.send.format(
-                    target = lover.target,
-                    sender = lover.qq
-                )
-            )
+        await matcher.send(Message.template("{at}{msg}").format(
+            at = MessageSegment.at(lover.target),
+            msg = MessageSegment.plain(msg.leave.request.send.format(
+                        target = lover.target,
+                        sender =lover.qq 
+                    ))
+            ))
 
         stats.update({
-               "sender": lover.qq,
-               "target": lover.target,
+               "sender": str(lover.qq),
+               "target": str(lover.target),
                "subcmd": self
            })
 
@@ -402,13 +397,26 @@ class LeaveCmd(BaseSubCmd):
     @override
     async def checkPerm(self, matcher: Matcher, stats: T_State, event: GroupMessage
             ) -> bool:
-        if stats.get("target") == event.get_user_id():
+        at_qq = self.__hasAT(event) 
+        
+        if at_qq == None:
+            return False 
+
+        target = stats.get("target")
+        sender = event.get_user_id()
+        if target == sender and at_qq == stats.get("sender"):
             return True
         return False
 
+    def __hasAT(self, 
+                event: GroupMessage
+        ) -> Union[str, None]:
+        for seg in event.get_message().export():
+            if seg['type'] == MessageType.AT:
+                return str(seg['target'])
+        return None
 
 class LoverInfoCmd(BaseSubCmd):
-
     @override
     def desrcibe(self) -> str:
         return "查看你的对象的牛子信息"
@@ -431,7 +439,6 @@ class LoverInfoCmd(BaseSubCmd):
                     length = niuzi.length
             ))
         
-
 class LoveRequestCmd(BaseSubCmd):
     @override
     def desrcibe(self) -> str:
@@ -464,36 +471,41 @@ class LoveRequestCmd(BaseSubCmd):
         if self.niuzi_dao.findNiuziByQQ(target) == None:
             await matcher.finish(msg.lover.get.target_no_niuzi)
         
-        await matcher.send(
-                msg.lover.request.send.format(
-                    target = target,
-                    sender = sender
-            ) 
-        )
+        await matcher.send(Message.template("{at}{msg}").format(
+            at = MessageSegment.at(int(target)),
+            msg = MessageSegment.plain(msg.lover.request.send.format(
+                        target = target,
+                        sender = sender
+                    ))
+            ))
 
         stats.update({
-               "sender": sender,
-               "target": target,
+               "sender": str(sender),
+               "target": str(target),
                "subcmd": self
            })
 
     @override
     async def request(self, matcher: Matcher, stats: T_State, event : GroupMessage
             ) -> None:
-       if event.get_plaintext() == "同意":
+        if event.get_plaintext() == "同意":
             assert stats.get('sender') != None
             self.lovers_dao.deleteByQQ(stats.get('sender'))
             await matcher.finish(msg.leave.request.agree)
-       await matcher.finish(msg.leave.request.disagree)
+        await matcher.finish(msg.leave.request.disagree)
 
     @override
     async def checkPerm(self, matcher: Matcher, stats: T_State, event: GroupMessage
             ) -> bool:
-        if stats.get("target") == event.get_user_id():
+        at_qq = self.__hasAT(event) 
+        if at_qq == None:
+            return False
+
+        target = stats.get("target")
+        sender = event.get_user_id()
+        if target == sender and at_qq == stats.get('sender'):
             return True
         return False
-
-
 
 
     def __hasAT(self, 
@@ -504,15 +516,18 @@ class LoveRequestCmd(BaseSubCmd):
                 return str(seg['target'])
         return None
 
-        
-
 class DoiCmd(BaseSubCmd):
     @override
     def desrcibe(self) -> str:
         return "和对象贴贴!"
 
     @override
-    async def execute(self, matcher: Matcher, stats: T_State, event: GroupMessage, args: str) -> None:
+    async def execute(self, 
+                matcher: Matcher, 
+                stats: T_State, 
+                event: GroupMessage, 
+                args: str
+            ) -> None:
         lover = self.lovers_dao.findloversByQQ(event.get_user_id())
         if lover == None:
             await matcher.finish(msg.doi.no_lover)
@@ -570,4 +585,31 @@ class ReuqestCmd(BaseSubCmd):
 
 # //TODO
 class Admin(BaseSubCmd):
-    pass
+    @override
+    def desrcibe(self) -> str:
+        return "管理员命令"
+
+    @override
+    async def execute(self, 
+            matcher: Matcher, 
+            stats: T_State, 
+            event: GroupMessage, 
+            args: str
+        ) -> None:
+        pass
+
+    async def __getNiuziByAT(self, 
+            matcher: Matcher, 
+            stats: T_State, 
+            event: GroupMessage, 
+            args: str
+        ) -> None:
+        pass
+
+    async def __changeLengthByAT(self, 
+            matcher: Matcher, 
+            stats: T_State, 
+            event: GroupMessage, 
+            args: str
+        ) -> None:
+        pass
