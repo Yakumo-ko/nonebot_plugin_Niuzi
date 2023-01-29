@@ -23,7 +23,7 @@ subcmds: Dict[str, Any] = {
         }
 
 
-matcher = on_command("niuzi", expire_time=timedelta(seconds=360))
+matcher = on_command("niuzi")
 
 @matcher.handle()
 async def info (
@@ -44,6 +44,7 @@ async def info (
 
     await listSubCmd(matcher)
 
+# TODO: set a vaild datetime for session
 @matcher.permission_updater
 async def checkPerm(matcher: Matcher, stats: T_State) -> Permission:
     assert stats.get('subcmd') != None
@@ -58,17 +59,28 @@ async def request(matcher: Matcher, stats: T_State, event: GroupMessage = Receiv
 
 
 async def listSubCmd(matcher: Matcher) -> None:
-    usage = "用法: /niuzi <subcmd>\n"
-
+    usage = "用法: /niuzi <subcmd>"
+    
+    tmp = [usage]
     for item in subcmds.items():
         cmd: BaseSubCmd = item[1](item[0])
-        usage += f"{cmd.useage()}: {cmd.desrcibe()}\n"
+        tmp.append(f"{cmd.useage()}: {cmd.desrcibe()}")
+
+    res = MessageSegment(
+                type=MessageType.FORWARD,
+                nodeList=[toNode(i) for i in tmp ]
+            )
     
-    await matcher.finish()
+    await matcher.finish(res)
 
+def toNode(msg: str) -> dict:
+    return {
+            "senderId": int(get_bot().self_id),
+            "time": int(datetime.datetime.now().timestamp()),
+            "senderName": "八云子",
+            "messageChain": [MessageSegment.plain(msg)]
+        }
 
-
-        
 
 
     

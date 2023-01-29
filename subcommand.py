@@ -424,10 +424,11 @@ class LoverInfoCmd(BaseSubCmd):
         lover = self.lovers_dao.findloversByQQ(event.get_user_id())
         if lover == None:
             await matcher.finish(msg.no_lover)
-        niuzi = self.niuzi_dao.findNiuziByQQ(str(lover.target))
+        qq = lover.target if lover.target != event.get_user_id() else lover.qq
+        niuzi = self.niuzi_dao.findNiuziByQQ(str(qq))
         await matcher.finish(msg.status.format(
-                    qq = niuzi.qq,
-                    qq_name = "",
+                    qq = "",
+                    qq_name = niuzi.qq,
                     name = niuzi.name,
                     sex = niuzi.sex,
                     length = niuzi.length

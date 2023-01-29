@@ -74,13 +74,7 @@ setting = {
         }
     },
 
-      "status": """\
-            你的对象：{qq}({qq_name})
-            Ta的牛子：{name}
-            牛子性别：{sex}
-            牛子长度：{length}厘米
-            """,
-
+      "status": "你的对象：{qq}({qq_name})\nTa的牛子：{name}\n牛子性别：{sex}牛子长度：{length}厘米",
       "no_lover": "你没有对象你在这叭叭什么？",
 
       "doi":{
