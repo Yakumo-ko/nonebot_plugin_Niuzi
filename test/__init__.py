@@ -20,11 +20,11 @@ def load_plugins(nonebug_init: None) -> Set['Plugin']:
             "defalut_nick_name": "牛子",
             "change2woman": 50,
             "pk_cd": 60,
-            "host":"localhost",
-            "user": "root",
-            "password": "18377556863",
-            "database": "miraiNiuzi",
-            "port": 5252
+            "mysql_host":"localhost",
+            "mysql_user": "root",
+            "mysql_password": "18377556863",
+            "mysql_database": "miraiNiuzi",
+            "mysql_port": 5252
         }
 
 

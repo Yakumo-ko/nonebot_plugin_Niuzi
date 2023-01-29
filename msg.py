@@ -40,12 +40,7 @@ setting = {
 
     "info": {
         "no_niuzi": "没有牛子你查什么查滚",
-        "niuzi_info": """\
-            主人：{qq}({qq_name})
-            名称：{name}
-            性别：{sex}
-            长度：{length}厘米
-            """
+        "niuzi_info": "主人：{qq_name}({qq})\n名称：{name}\n性别：{sex}\n长度：{length}厘米"
         },
 
     "change_sex": {

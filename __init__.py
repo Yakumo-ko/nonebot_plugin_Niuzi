@@ -7,4 +7,5 @@
 # def some_function():
 #     pass
 
+from . import command
 

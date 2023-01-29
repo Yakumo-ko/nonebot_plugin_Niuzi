@@ -19,7 +19,7 @@ from .dao import *
 from .event import *
 from .utils.Sex import Sex, CDType
 
-plugin_config = Config.parse_obj(get_driver().config.nonebot_plugin_niuzi)
+plugin_config = Config.parse_obj(get_driver().config)
 
 msg = Msg(**setting) 
 
@@ -32,10 +32,10 @@ class BaseSubCmd(ABC):
         self.cd_dao = CoolDownDAO()
 
     def desrcibe(self) -> str:
-        return "null"
+        return "no desrcibe"
     
     def useage(self) -> str:
-        return "null"
+        return self.cmd_prefix
         
 
     @abstractmethod
@@ -202,9 +202,6 @@ class NameCmd(BaseSubCmd):
         await matcher.finish(msg.name.success)
 
 class PKCmd(BaseSubCmd):
-    def __init__(self, cmd_prefix: str) -> None:
-        super().__init__(cmd_prefix)
-
     @override
     def desrcibe(self) -> str:
         return "比划一下, 赢加长度输减长度, 断掉双方都减长度"
@@ -350,9 +347,6 @@ class TopCmd(BaseSubCmd):
             i+=1
 
 class LeaveCmd(BaseSubCmd):
-    def __init__(self, cmd_prefix: str) -> None:
-        super().__init__(cmd_prefix)
-
     @override
     def desrcibe(self) -> str:
         return "和你的对象分手"

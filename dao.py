@@ -5,7 +5,7 @@ from .config import Config
 from .entiry import * 
 from .utils.Mysql import Sql
 
-conf = Config.parse_obj(get_driver().config.nonebot_plugin_niuzi)
+conf = Config.parse_obj(get_driver().config)
 
 class LoversDAO:
     # sql table name
@@ -20,11 +20,11 @@ class LoversDAO:
 
     def __init__(self) -> None:
         self.sql: Sql = Sql(
-                conf.host, 
-                conf.port, 
-                conf.user, 
-                conf.password, 
-                conf.database
+                conf.mysql_host, 
+                conf.mysql_port, 
+                conf.mysql_user, 
+                conf.mysql_password, 
+                conf.mysql_database
             )
 
 
@@ -104,11 +104,11 @@ class NiuziDAO:
 
     def __init__(self) -> None:
         self.sql: Sql = Sql(
-                conf.host, 
-                conf.port, 
-                conf.user, 
-                conf.password, 
-                conf.database
+                conf.mysql_host, 
+                conf.mysql_port, 
+                conf.mysql_user, 
+                conf.mysql_password, 
+                conf.mysql_database
             )
 
 
@@ -185,11 +185,11 @@ class CoolDownDAO:
 
     def __init__(self) -> None:
         self.sql: Sql = Sql(
-                conf.host, 
-                conf.port, 
-                conf.user, 
-                conf.password, 
-                conf.database
+                conf.mysql_host, 
+                conf.mysql_port, 
+                conf.mysql_user, 
+                conf.mysql_password, 
+                conf.mysql_database
             )
 
         self.sql.executeNotQuerySql(self.__CREAT_COOLDOWN)

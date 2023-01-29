@@ -6,7 +6,6 @@ from nonebot.matcher import Matcher
 from nonebot.params import CommandArg, Received
 from nonebot.permission import Permission
 from nonebot.plugin import on_command
-from nonebot.rule import to_me
 from nonebot.typing import T_State
 from .subcommand import * 
 
@@ -18,11 +17,13 @@ subcmds: Dict[str, Any] = {
         "改牛子名": NameCmd,
         "比划比划": PKCmd,
         "我要分手": LeaveCmd,
-        "搞对象": LoveRequestCmd
+        "搞对象": LoveRequestCmd,
+        "贴贴": DoiCmd,
+        "我的对象": LoverInfoCmd
         }
 
 
-matcher = on_command("niuzi", rule=to_me(), expire_time=timedelta(seconds=360))
+matcher = on_command("niuzi", expire_time=timedelta(seconds=360))
 
 @matcher.handle()
 async def info (
@@ -33,8 +34,6 @@ async def info (
         ) -> None:
     text = message.extract_plain_text()
 
-    if len(text) == 0:
-        await matcher.finish("参数捏")
     args = text.split(' ')
 
     for item in subcmds.items():
@@ -42,6 +41,8 @@ async def info (
             args = text.replace(args[0], '').strip()
             cmd: BaseSubCmd = item[1](item[0])
             await cmd.execute(matcher, stats, event, args)
+
+    await listSubCmd(matcher)
 
 @matcher.permission_updater
 async def checkPerm(matcher: Matcher, stats: T_State) -> Permission:
@@ -56,7 +57,16 @@ async def request(matcher: Matcher, stats: T_State, event: GroupMessage = Receiv
     await stats.get('subcmd').request(matcher, stats, event)
 
 
+async def listSubCmd(matcher: Matcher) -> None:
+    usage = "用法: /niuzi <subcmd>\n"
+
+    for item in subcmds.items():
+        cmd: BaseSubCmd = item[1](item[0])
+        usage += f"{cmd.useage()}: {cmd.desrcibe()}\n"
     
+    await matcher.finish()
+
+
 
         
 
