@@ -4,7 +4,7 @@ from nonebug import App
 from . import load_plugins, shouldDo
 
 from ..msg import Msg, setting 
-from ..utils.Sex import Sex
+from ..enum import Sex
 
 msg = Msg(**setting) 
 

@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Set, Type, Union
 
 from . import load_plugins, shouldDo 
 
-from ..utils.Sex import Sex
+from ..enum import Sex
 from ..entiry import NiuZi
 
 from ..msg import Msg, setting 
@@ -21,7 +21,7 @@ class TestChangeName:
 
 
     @pytest.mark.asyncio
-    async def test_name_to_long(self, app: App, load_plugins) -> None:
+    async def test_success(self, app: App, load_plugins) -> None:
         from ..dao import NiuziDAO
         from ..entiry import NiuZi
 

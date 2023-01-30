@@ -1,13 +1,18 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Dict, Any
+from nonebot import get_bot
 from nonebot.adapters.mirai2.event import GroupMessage
-from nonebot.adapters import Message
+from nonebot.adapters import Message 
+from nonebot.adapters.mirai2.message import MessageSegment, MessageType
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg, Received
 from nonebot.permission import Permission
 from nonebot.plugin import on_command
 from nonebot.typing import T_State
-from .subcommand import * 
+from .subcommand import ( ChangeSexCmd, GetCmd, NameCmd, 
+            InfoCmd, PKCmd, LeaveCmd, LoveRequestCmd, 
+            DoiCmd, LoverInfoCmd, Admin, BaseSubCmd
+        ) 
 
 
 subcmds: Dict[str, Any] = {
@@ -19,7 +24,8 @@ subcmds: Dict[str, Any] = {
         "我要分手": LeaveCmd,
         "搞对象": LoveRequestCmd,
         "贴贴": DoiCmd,
-        "我的对象": LoverInfoCmd
+        "我的对象": LoverInfoCmd,
+        "admin": Admin
         }
 
 
@@ -76,7 +82,7 @@ async def listSubCmd(matcher: Matcher) -> None:
 def toNode(msg: str) -> dict:
     return {
             "senderId": int(get_bot().self_id),
-            "time": int(datetime.datetime.now().timestamp()),
+            "time": int(datetime.now().timestamp()),
             "senderName": "八云子",
             "messageChain": [MessageSegment.plain(msg)]
         }

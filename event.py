@@ -6,7 +6,6 @@ import random
 from .dao import *
 from .entiry import *
 from .msg import Msg, setting 
-from .utils.Sex import Sex
 
 msg = Msg(**setting) 
 

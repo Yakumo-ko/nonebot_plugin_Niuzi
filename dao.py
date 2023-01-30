@@ -3,7 +3,7 @@ from typing import Union, Dict, Tuple, List, Any
 from nonebot import get_driver
 from .config import Config
 from .entiry import * 
-from .utils.Mysql import Sql
+from .utils import Sql
 
 conf = Config.parse_obj(get_driver().config)
 

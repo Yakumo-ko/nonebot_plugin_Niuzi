@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Set, Type, Union
 
 from . import load_plugins, shouldDo 
 
-from ..utils.Sex import Sex
+from ..enum import Sex
 from ..entiry import NiuZi
 
 from ..msg import Msg, setting 

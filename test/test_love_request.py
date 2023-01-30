@@ -7,7 +7,7 @@ import datetime
 
 from . import load_plugins, shouldDo, shouldDoWithAt 
 
-from ..utils.Sex import Sex
+from ..enum import Sex
 from ..entiry import * 
 
 from ..msg import Lover, Msg, setting 

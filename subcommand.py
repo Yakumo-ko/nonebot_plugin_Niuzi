@@ -3,21 +3,23 @@ from abc import ABC, abstractmethod
 from typing_extensions import override
 
 from nonebot import get_driver, get_bot
-from nonebot.adapters import Message, MessageTemplate
+from nonebot.adapters import Message 
 
 from nonebot.adapters.mirai2.event import GroupMessage
-from nonebot.adapters.mirai2.message import MessageSegment, MessageType, MessageChain
+from nonebot.adapters.mirai2.message import MessageSegment, MessageChain
+from nonebot.rule import startswith
 from nonebot.typing import T_State
 from nonebot.matcher import Matcher
 
 import datetime
 
-from .config import Config
+from .utils import hasAT, member_profile, toChinese
+from .config import Config 
 from .msg import Msg, setting 
 from .entiry import *
 from .dao import * 
 from .event import *
-from .utils.Sex import Sex, CDType
+from .enum import Sex, CDType
 
 plugin_config = Config.parse_obj(get_driver().config)
 
@@ -81,14 +83,11 @@ class InfoCmd(BaseSubCmd):
         await matcher.finish(msg.info.niuzi_info.format(
                         qq = niuzi.qq,
                         name = niuzi.name,
-                        sex =  self.__toChinese(niuzi.sex),
+                        sex =  toChinese(niuzi.sex),
                         length = niuzi.length,
                         qq_name = event.sender.name 
                     )
                 )
-
-    def __toChinese(self, sex: int) -> str:
-        return '女' if sex == Sex.FEMALE else '男'
 
     def getAll(self) -> Union[List[str], None]:
         niuzi_list = self.niuzi_dao.getAll()
@@ -103,7 +102,7 @@ class InfoCmd(BaseSubCmd):
             tmp = msg.info.niuzi_info.format(
                     qq = niuzi.qq,
                     name = niuzi.name,
-                    sex =  self.__toChinese(niuzi.sex),
+                    sex =  toChinese(niuzi.sex),
                     length = niuzi.length,
                     qq_name = "none" 
                 )
@@ -166,7 +165,7 @@ class GetCmd(BaseSubCmd):
                     "points": 0
                 })
             )
-        await matcher.finish(msg.get.success)
+        await matcher.finish(msg.get.success.format(subcmd=self.useage()))
 
 class NameCmd(BaseSubCmd):
     @override
@@ -222,7 +221,7 @@ class PKCmd(BaseSubCmd):
         if niuzi == None:
             await matcher.finish(msg.no_niuzi)
 
-        target = self.__hasAT(event) 
+        target = hasAT(event) 
         if target == None:
             await matcher.finish(msg.pk.no_args)
 
@@ -279,14 +278,6 @@ class PKCmd(BaseSubCmd):
         old = datetime.datetime.fromtimestamp(cool_down.timestampe)
         return datetime.datetime.now() - old
 
-    def __hasAT(self, 
-                event: GroupMessage
-        ) -> Union[str, None]:
-        for seg in event.get_message().export():
-            if seg['type'] == MessageType.AT:
-                return str(seg['target'])
-        return None
-
 class TopCmd(BaseSubCmd):
     @override
     def desrcibe(self) -> str:
@@ -299,7 +290,7 @@ class TopCmd(BaseSubCmd):
                 event: GroupMessage,
                 args: str
             ) -> None:
-        res: Union[List[str], None] = self.getAll() 
+        res: Union[List[str], None] = await self.getAll(event.sender.group.id) 
 
         bot_info = await get_bot().bot_pro_file()
 
@@ -322,10 +313,8 @@ class TopCmd(BaseSubCmd):
                 ])
             )
 
-    def __toChinese(self, sex: int) -> str:
-        return '女' if sex == Sex.FEMALE else '男'
 
-    def getAll(self) -> Union[List[str], None]:
+    async def getAll(self, group: int) -> Union[List[str], None]:
         niuzi_list = self.niuzi_dao.getAll()
         if niuzi_list == None:
             return None
@@ -335,12 +324,15 @@ class TopCmd(BaseSubCmd):
         res = []
         i = 0
         for niuzi in niuzi_list:
+            member = await member_profile(group, niuzi.qq)
+            if member == None:
+                continue
             tmp = msg.info.niuzi_info.format(
                     qq = niuzi.qq,
                     name = niuzi.name,
-                    sex =  self.__toChinese(niuzi.sex),
+                    sex =  toChinese(niuzi.sex),
                     length = niuzi.length,
-                    qq_name = "none" 
+                    qq_name = member['nickname'] 
                 )
               
             res.append(f"{i}: "+ tmp)
@@ -368,7 +360,8 @@ class LeaveCmd(BaseSubCmd):
             at = MessageSegment.at(lover.target),
             msg = MessageSegment.plain(msg.leave.request.send.format(
                         target = lover.target,
-                        sender =lover.qq 
+                        sender =lover.qq,
+                        subcmd = "同意/不同意 <@target>"
                     ))
             ))
 
@@ -391,8 +384,7 @@ class LeaveCmd(BaseSubCmd):
     @override
     async def checkPerm(self, matcher: Matcher, stats: T_State, event: GroupMessage
             ) -> bool:
-        at_qq = self.__hasAT(event) 
-        
+        at_qq = hasAT(event) 
         if at_qq == None:
             return False 
 
@@ -401,14 +393,6 @@ class LeaveCmd(BaseSubCmd):
         if target == sender and at_qq == stats.get("sender"):
             return True
         return False
-
-    def __hasAT(self, 
-                event: GroupMessage
-        ) -> Union[str, None]:
-        for seg in event.get_message().export():
-            if seg['type'] == MessageType.AT:
-                return str(seg['target'])
-        return None
 
 class LoverInfoCmd(BaseSubCmd):
     @override
@@ -424,13 +408,17 @@ class LoverInfoCmd(BaseSubCmd):
         lover = self.lovers_dao.findloversByQQ(event.get_user_id())
         if lover == None:
             await matcher.finish(msg.no_lover)
-        qq = lover.target if lover.target != event.get_user_id() else lover.qq
+        qq = lover.target if str(lover.target) != event.get_user_id() else lover.qq
         niuzi = self.niuzi_dao.findNiuziByQQ(str(qq))
+
+        member = await member_profile(event.sender.group.id, niuzi.qq)
+        nickname = member['nickname'] if member!= None else "none"
+
         await matcher.finish(msg.status.format(
-                    qq = "",
-                    qq_name = niuzi.qq,
+                    qq = niuzi.qq,
+                    qq_name = nickname,
                     name = niuzi.name,
-                    sex = niuzi.sex,
+                    sex = toChinese(niuzi.sex),
                     length = niuzi.length
             ))
         
@@ -453,7 +441,7 @@ class LoveRequestCmd(BaseSubCmd):
         if self.lovers_dao.findloversByQQ(sender) != None:
             await matcher.finish(msg.lover.get.has_lover)
 
-        target = self.__hasAT(event)
+        target = hasAT(event)
         if target == None:
             await matcher.finish(msg.lover.get.has_lover)
 
@@ -470,7 +458,8 @@ class LoveRequestCmd(BaseSubCmd):
             at = MessageSegment.at(int(target)),
             msg = MessageSegment.plain(msg.lover.request.send.format(
                         target = target,
-                        sender = sender
+                        sender = sender,
+                        subcmd = "同意/不同意 <@target>"
                     ))
             ))
 
@@ -492,7 +481,7 @@ class LoveRequestCmd(BaseSubCmd):
     @override
     async def checkPerm(self, matcher: Matcher, stats: T_State, event: GroupMessage
             ) -> bool:
-        at_qq = self.__hasAT(event) 
+        at_qq = hasAT(event) 
         if at_qq == None:
             return False
 
@@ -501,15 +490,6 @@ class LoveRequestCmd(BaseSubCmd):
         if target == sender and at_qq == stats.get('sender'):
             return True
         return False
-
-
-    def __hasAT(self, 
-                event: GroupMessage
-        ) -> Union[str, None]:
-        for seg in event.get_message().export():
-            if seg['type'] == MessageType.AT:
-                return str(seg['target'])
-        return None
 
 class DoiCmd(BaseSubCmd):
     @override
@@ -557,7 +537,6 @@ class DoiCmd(BaseSubCmd):
         niuzi.length += length
         self.niuzi_dao.update(niuzi)
 
-
     def __updateCd(self, sender: str, target: str) -> None:
         self.cd_dao.deleteByQQ(sender, CDType.doi)
         self.cd_dao.deleteByQQ(target, CDType.doi)
@@ -573,16 +552,18 @@ class DoiCmd(BaseSubCmd):
                 "type": CDType.doi
             }))
 
-
 # //TODO
 class ReuqestCmd(BaseSubCmd):
     pass
 
-# //TODO
 class Admin(BaseSubCmd):
     @override
     def desrcibe(self) -> str:
         return "管理员命令"
+
+    @override
+    def useage(self) -> str:
+        return self.cmd_prefix + " <subcmd>\n get <@target> \nchlen <len> <@target>"
 
     @override
     async def execute(self, 
@@ -591,15 +572,35 @@ class Admin(BaseSubCmd):
             event: GroupMessage, 
             args: str
         ) -> None:
-        pass
+        if args.startswith("get"):
+            await self.__getNiuziByAT(
+                        matcher, 
+                        stats, 
+                        event, 
+                        args.replace("get", "").strip()
+                )
+        elif args.startswith("chlen"):
+            await self.__getNiuziByAT(
+                        matcher, 
+                        stats, 
+                        event, 
+                        args.replace("get", "").strip()
+                )
+        else:
+            await matcher.finish(self.useage())
 
+        
     async def __getNiuziByAT(self, 
             matcher: Matcher, 
             stats: T_State, 
             event: GroupMessage, 
             args: str
         ) -> None:
-        pass
+        at = hasAT(event)
+        if at == None:
+            await matcher.finish("<@target>?")
+        await InfoCmd("").execute(matcher, stats, event, args)
+        
 
     async def __changeLengthByAT(self, 
             matcher: Matcher, 
@@ -607,4 +608,18 @@ class Admin(BaseSubCmd):
             event: GroupMessage, 
             args: str
         ) -> None:
-        pass
+        at = hasAT(event)
+        if at == None:
+            await matcher.finish("<@target>?")
+        niuzi: Union[NiuZi, None]= self.niuzi_dao.findNiuziByQQ(
+                    event.get_user_id()
+                )
+
+        if niuzi == None:
+            await matcher.finish(msg.info.no_niuzi)
+        if not args.isdigit():
+            await matcher.finish("len must be digit")
+        niuzi.length = int(args)
+        self.niuzi_dao.update(niuzi)
+        await matcher.finish("success")
+

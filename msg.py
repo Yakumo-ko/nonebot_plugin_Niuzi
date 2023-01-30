@@ -8,7 +8,7 @@ setting = {
             },
         "view": {
             "no_args": "我要查谁？你啥都不给让我查空气?"  
-            },
+            }
         },
 
     "cum": {
@@ -18,7 +18,7 @@ setting = {
 
     "get": {
         "has_niuzi": "你有了你还领, 有病",   
-        "success": "领养了，输入「我的牛子」查看你的牛子信息"
+        "success": "领养了，输入「{subcmd}」查看你的牛子信息"
         },
 
     "name": {
@@ -58,23 +58,23 @@ setting = {
            },
 
         "request": {
-          "send": "{target} 你好，{sender}想跟你搞对象\n输入命令「处理请求 搞对象 同意/不同意",
+          "send": "{target} 你好，{sender}想跟你搞对象\n输入命令「{subcmd}」",
           "agree": "{sender} 恭喜！！！！对方同意了你的请求",
           "disagree": "{sender} 真遗憾……对方没有同意你的请求",
-          "exists": "已存在请求，可能是别人发的",
+          "exists": "已存在请求，可能是别人发的"
             } 
         },
 
     "leave": {
         "no_lover": "你没对象你分哪门子手？",
         "request": {
-            "send": "{target} 你好，{sender} 想跟你分手\n输入命令「处理请求 分手 同意/不同意」",
+            "send": "{target} 你好，{sender} 想跟你分手\n输入命令「{subcmd}」",
             "agree": "{0} 对方同意了你的分手请求……",
             "disagree": "{0} 对方没有同意你的请求"
         }
     },
 
-      "status": "你的对象：{qq}({qq_name})\nTa的牛子：{name}\n牛子性别：{sex}牛子长度：{length}厘米",
+      "status": "你的对象：{qq_name}({qq})\nTa的牛子：{name}\n牛子性别：{sex}\n牛子长度：{length}厘米",
       "no_lover": "你没有对象你在这叭叭什么？",
 
       "doi":{
@@ -94,7 +94,6 @@ setting = {
     "command_header": "牛子养成系统(未开发完成)",
     "command_helper": "命令：{0} {1}  {2}"
 }
-
 
 class Admin(BaseModel):
     class Change(BaseModel):
