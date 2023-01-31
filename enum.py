@@ -1,4 +1,5 @@
-from enum import IntEnum, unique 
+from enum import IntEnum, unique, Enum
+
 
 @unique
 class Sex(IntEnum):
@@ -26,3 +27,5 @@ class Sex(IntEnum):
 class CDType(IntEnum):
     pk = 0
     doi = 1
+
+

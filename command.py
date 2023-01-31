@@ -1,4 +1,3 @@
-from datetime import datetime, timedelta
 from typing import Dict, Any
 from nonebot import get_bot
 from nonebot.adapters.mirai2.event import GroupMessage
@@ -9,14 +8,17 @@ from nonebot.params import CommandArg, Received
 from nonebot.permission import Permission
 from nonebot.plugin import on_command
 from nonebot.typing import T_State
+
+from .utils import toNode
 from .subcommand import ( ChangeSexCmd, GetCmd, NameCmd, 
             InfoCmd, PKCmd, LeaveCmd, LoveRequestCmd, 
-            DoiCmd, LoverInfoCmd, Admin, BaseSubCmd
+            DoiCmd, LoverInfoCmd, Admin, BaseSubCmd, TopCmd
         ) 
 
 
 subcmds: Dict[str, Any] = {
         "变女性": ChangeSexCmd,
+        "牛子榜": TopCmd,
         "领养牛子": GetCmd,
         "我的牛子": InfoCmd,
         "改牛子名": NameCmd,
@@ -46,9 +48,13 @@ async def info (
         if args[0] == item[0] :
             args = text.replace(args[0], '').strip()
             cmd: BaseSubCmd = item[1](item[0])
-            await cmd.execute(matcher, stats, event, args)
+            try:
+                await cmd.execute(matcher, stats, event, args)
+            except Exception as e:
+                print(e.with_traceback(None))
+                await matcher.finish("未知错误, 该命令不可用")
 
-    await listSubCmd(matcher)
+    await listSubCmd(matcher, event.sender.group.id)
 
 # TODO: set a vaild datetime for session
 @matcher.permission_updater
@@ -63,29 +69,24 @@ async def checkPerm(matcher: Matcher, stats: T_State) -> Permission:
 async def request(matcher: Matcher, stats: T_State, event: GroupMessage = Received()) :
     await stats.get('subcmd').request(matcher, stats, event)
 
-async def listSubCmd(matcher: Matcher) -> None:
-    usage = "用法: /niuzi <subcmd>"
+async def listSubCmd(matcher: Matcher, group: int) -> None:
+    usage = "用法: /niuzi [subcmd]\n下边是列出的subcmd"
     
-    tmp = [usage]
+    # [] 用来代替<>  带有<>两字符的消息发不出去, 我也不知道为啥
+    tmp = [usage, "注: []是必选项"]
     for item in subcmds.items():
         cmd: BaseSubCmd = item[1](item[0])
         tmp.append(f"{cmd.useage()}: {cmd.desrcibe()}")
 
-    res = MessageSegment(
+    # bot_pro_file不可用 
+    id = int(get_bot().self_id)
+    name= await get_bot().member_profile(member_id=id, target=group)
+    await matcher.finish(MessageSegment(
                 type=MessageType.FORWARD,
-                nodeList=[toNode(i) for i in tmp ]
+                nodeList=[toNode(i, id, name['nickname']) for i in tmp ]
             )
+        )
     
-    await matcher.finish(res)
-
-def toNode(msg: str) -> dict:
-    return {
-            "senderId": int(get_bot().self_id),
-            "time": int(datetime.now().timestamp()),
-            "senderName": "八云子",
-            "messageChain": [MessageSegment.plain(msg)]
-        }
-
 
 
     

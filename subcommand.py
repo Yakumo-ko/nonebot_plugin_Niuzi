@@ -6,14 +6,15 @@ from nonebot import get_driver, get_bot
 from nonebot.adapters import Message 
 
 from nonebot.adapters.mirai2.event import GroupMessage
-from nonebot.adapters.mirai2.message import MessageSegment, MessageChain
+from nonebot.adapters.mirai2.message import MessageSegment, MessageType
+from nonebot.adapters.mirai2.permission import GROUP_ADMIN, GROUP_OWNER
 from nonebot.typing import T_State
 from nonebot.matcher import Matcher
 
 import datetime
 import re
 
-from .utils import checkCondition, hasAT, member_profile, toChinese
+from .utils import checkCondition, hasAT, member_profile, toChinese, toNode
 from .config import Config 
 from .msg import Msg, setting 
 from .entiry import *
@@ -171,7 +172,7 @@ class NameCmd(BaseSubCmd):
 
     @override
     def useage(self) -> str:
-        return self.cmd_prefix + " <name>"
+        return self.cmd_prefix + " [name]"
 
     @override
     async def execute(self, 
@@ -200,7 +201,7 @@ class PKCmd(BaseSubCmd):
 
     @override
     def useage(self) -> str:
-        return self.cmd_prefix + " <@target>"
+        return self.cmd_prefix + " [@target]"
 
     @override
     async def execute(self, 
@@ -254,13 +255,13 @@ class PKCmd(BaseSubCmd):
         self.cd_dao.deleteByQQ(target, CDType.pk)
         self.cd_dao.insert(CoolDown.parse_obj({
                 "qq": sender,
-                "timestampe": datetime.datetime.now().timestamp(),
+                "timestampe": int(datetime.datetime.now().timestamp()),
                 "type": CDType.pk
             }))
 
         self.cd_dao.insert(CoolDown.parse_obj({
                 "qq": target,
-                "timestampe": datetime.datetime.now().timestamp(),
+                "timestampe": int(datetime.datetime.now().timestamp()),
                 "type": CDType.pk
             }))
 
@@ -283,26 +284,16 @@ class TopCmd(BaseSubCmd):
                 event: GroupMessage,
                 args: str
             ) -> None:
-        res: Union[List[str], None] = await self.getAll(event.sender.group.id) 
+        group = event.sender.group.id
+        res: Union[List[str], None] = await self.getAll(group) 
+        await checkCondition(matcher, res == None, "太可惜了, 本群还没有人领养过牛子")
 
-        bot_info = await get_bot().bot_pro_file()
-
-        if res == None:
-            await matcher.finish("太可惜了，本群还没有人领养过牛子")
-
-        node_list = MessageChain(
-                [MessageSegment.plain(msg) for msg in res] 
-            )
-           
-        await matcher.finish(MessageChain([MessageSegment.forward(
-                        "",
-                        int(get_bot().self_id),
-                        int(datetime.datetime.now().timestamp()),
-                        bot_info['nickname'],
-                        node_list,
-                        233
-                    )
-                ])
+        id = int(get_bot().self_id)
+        bot_info = await get_bot().member_profile(member_id=id,  target=group)
+        await matcher.finish(MessageSegment(
+                    type=MessageType.FORWARD,
+                    nodeList=[toNode(msg, id, bot_info['nickname']) for msg in res]
+                )
             )
 
     async def getAll(self, group: int) -> Union[List[str], None]:
@@ -329,6 +320,8 @@ class TopCmd(BaseSubCmd):
             res.append(f"{i}: "+ tmp)
             i+=1
 
+        return res
+
 class LeaveCmd(BaseSubCmd):
     @override
     def desrcibe(self) -> str:
@@ -352,7 +345,7 @@ class LeaveCmd(BaseSubCmd):
             msg = MessageSegment.plain(msg.leave.request.send.format(
                         target = lover.target,
                         sender =lover.qq,
-                        subcmd = "同意/不同意 <@target>"
+                        subcmd = "同意/不同意 [@target]"
                     ))
             ))
 
@@ -420,7 +413,7 @@ class LoveRequestCmd(BaseSubCmd):
 
     @override
     def useage(self) -> str:
-        return self.cmd_prefix + " <@target>"
+        return self.cmd_prefix + " [@target]"
 
     async def execute(self, 
                 matcher: Matcher, 
@@ -447,7 +440,7 @@ class LoveRequestCmd(BaseSubCmd):
             msg = MessageSegment.plain(msg.lover.request.send.format(
                         target = target,
                         sender = sender,
-                        subcmd = "同意/不同意 <@target>"
+                        subcmd = "同意/不同意 [@target]"
                     ))
             ))
 
@@ -494,6 +487,10 @@ class DoiCmd(BaseSubCmd):
         lover = self.lovers_dao.findloversByQQ(event.get_user_id())
         await checkCondition(matcher, lover==None, msg.doi.no_lover)
 
+        qq = lover.qq if lover.qq != int(event.get_user_id()) else lover.target
+        group = event.sender.group.id
+        await checkCondition(matcher, (await member_profile(group, qq))==None, "你的对象不在这个群")
+
         cd = plugin_config.doi_cd
         sender = self.__getCd(str(lover.qq)) 
         target = self.__getCd(str(lover.target)) 
@@ -529,13 +526,13 @@ class DoiCmd(BaseSubCmd):
         self.cd_dao.deleteByQQ(target, CDType.doi)
         self.cd_dao.insert(CoolDown.parse_obj({
                 "qq": sender,
-                "timestampe": datetime.datetime.now().timestamp(),
+                "timestampe": int(datetime.datetime.now().timestamp()),
                 "type": CDType.doi
             }))
 
         self.cd_dao.insert(CoolDown.parse_obj({
                 "qq": target,
-                "timestampe": datetime.datetime.now().timestamp(),
+                "timestampe": int(datetime.datetime.now().timestamp()),
                 "type": CDType.doi
             }))
 
@@ -546,11 +543,11 @@ class ReuqestCmd(BaseSubCmd):
 class Admin(BaseSubCmd):
     @override
     def desrcibe(self) -> str:
-        return "管理员命令"
+        return "管理员命令, 仅允许群主和管理员"
 
     @override
     def useage(self) -> str:
-        return self.cmd_prefix + " <subcmd>\n get <@target> \nchlen <len> <@target>"
+        return self.cmd_prefix + " [subcmd]\n subcmd:\n  get [@target]\n  chlen [len] [@target]"
 
     @override
     async def execute(self, 
@@ -559,6 +556,9 @@ class Admin(BaseSubCmd):
             event: GroupMessage, 
             args: str
         ) -> None:
+        if not (await GROUP_OWNER(get_bot(), event) or await GROUP_ADMIN(get_bot(), event)):
+            await matcher.finish("你没有权限执行该命令")
+
         if args.startswith("get"):
             await self.__getNiuziByAT(
                         matcher, 
@@ -585,7 +585,7 @@ class Admin(BaseSubCmd):
         ) -> None:
         at = hasAT(event)
         if at == None:
-            await matcher.finish("<@target>?")
+            await matcher.finish("[@target]?")
         await InfoCmd("").execute(matcher, stats, event, args)
         
     async def __changeLengthByAT(self, 
@@ -595,7 +595,7 @@ class Admin(BaseSubCmd):
             args: str
         ) -> None:
         at = hasAT(event)
-        await checkCondition(matcher, at==None, "<@target>?")
+        await checkCondition(matcher, at==None, "[@target]?")
         niuzi = self.niuzi_dao.findNiuziByQQ(
                     event.get_user_id()
                 )

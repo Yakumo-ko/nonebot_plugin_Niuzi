@@ -2,7 +2,7 @@
 from typing import NoReturn, Tuple, List, Union, Dict, Any
 from nonebot import get_bot
 from nonebot.adapters.mirai2.event import GroupMessage
-from nonebot.adapters.mirai2.message import MessageType
+from nonebot.adapters.mirai2.message import MessageSegment, MessageType
 from nonebot.internal.adapter.bot import Bot
 from nonebot.matcher import Matcher
 
@@ -10,6 +10,7 @@ import pymysql
 import pymysql.cursors
 from pymysql.cursors import Cursor, DictCursor
 from pymysql import Connection
+from datetime import datetime, timedelta
 
 from .enum import Sex
 
@@ -66,11 +67,13 @@ async def member_profile(group: int, member: int) -> Union[dict, None]:
     """
     获取指定群的某个群成员信息, 若此成员不在该群返回None
     """
+
     bot: Bot  = get_bot()
     members = await bot.member_list(target = group)
-    if not member in members:   
-        return None
-    return await bot.member_profile(target=group, member_id=member)
+    for mem in members['data']:
+        if member == mem['id']:
+            return await bot.member_profile(target=group, member_id=member)
+    return None
 
 def toChinese(sex: int) -> str:
     return '女' if sex == Sex.FEMALE else '男'
@@ -88,5 +91,17 @@ async def checkCondition(matcher: Matcher, condition: bool, msg: str) -> Union[N
     """
     if condition:
         await matcher.finish(msg)
+
+def toNode(msg: str, id: int, nickname: str) -> dict:
+    """
+    构造一个转发节点
+    """
+    return {
+            "senderId": id,
+            "time": int(datetime.now().timestamp()),
+            "senderName": nickname, 
+            "messageChain": [MessageSegment.plain(msg)]
+        }
+
 
 

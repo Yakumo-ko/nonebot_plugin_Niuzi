@@ -195,7 +195,7 @@ class CoolDownDAO:
         self.sql.executeNotQuerySql(self.__CREAT_COOLDOWN)
 
     def findCoolDownByQQ(self, qq: str, type: int) -> Union[CoolDown, None]:
-        sql: str = "select * from `{tb_name}` where `qq`='{qq}' and 'type' = '{type}'".format(
+        sql: str = "select * from `{tb_name}` where `qq`='{qq}' and `type` = '{type}'".format(
                 tb_name = self.__TB_COOLDOWN,
                 type = type,
                 qq = qq
@@ -207,18 +207,18 @@ class CoolDownDAO:
 
     def insert(self, cd: CoolDown) -> bool:
         sql: str =  "INSERT INTO `{table_name}` \
-                        (qq, timestampe) VALUE\
+                        (qq, timestampe, type) VALUE\
                         ({qq}, {time}, {type})".format(
                                 qq = cd.qq,
                                 time = cd.timestampe,
-                                type= cd.type,
+                                type = cd.type,
                                 table_name = self.__TB_COOLDOWN
                             )
 
         return self.sql.executeNotQuerySql(sql)
 
     def deleteByQQ(self, qq: str, type: int) -> bool:
-        sql: str = "DELETE  FROM `{table_name}` WHERE `qq`= {qq} and 'type'={type}".format(
+        sql: str = "DELETE  FROM `{table_name}` WHERE `qq`= {qq} and `type`={type}".format(
                     qq = qq,
                     type = type,
                     table_name = self.__TB_COOLDOWN
