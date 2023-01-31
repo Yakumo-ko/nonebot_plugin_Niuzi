@@ -63,7 +63,6 @@ async def checkPerm(matcher: Matcher, stats: T_State) -> Permission:
 async def request(matcher: Matcher, stats: T_State, event: GroupMessage = Received()) :
     await stats.get('subcmd').request(matcher, stats, event)
 
-
 async def listSubCmd(matcher: Matcher) -> None:
     usage = "用法: /niuzi <subcmd>"
     

@@ -13,7 +13,7 @@ from nonebot.matcher import Matcher
 import datetime
 import re
 
-from .utils import hasAT, member_profile, toChinese
+from .utils import checkCondition, hasAT, member_profile, toChinese
 from .config import Config 
 from .msg import Msg, setting 
 from .entiry import *
@@ -123,21 +123,18 @@ class ChangeSexCmd(BaseSubCmd):
                 args: str
             ) -> None:
         niuzi: Union[NiuZi, None] = self.niuzi_dao.findNiuziByQQ(
-                event.get_user_id()
+                    event.get_user_id()
                 )
-        if niuzi == None:
-            await matcher.finish(msg.change_sex.no_niuzi)
 
-        if niuzi.sex == Sex.FEMALE:
-            await matcher.finish(msg.change_sex.already_woman)
-        else:
-            niuzi.length -= plugin_config.change2woman 
-            niuzi.sex = Sex.FEMALE
-            self.niuzi_dao.update(niuzi) 
+        await checkCondition(matcher, niuzi==None, msg.change_sex.no_niuzi)
+        await checkCondition(matcher, niuzi==None, msg.change_sex.already_woman)
+        niuzi.length -= plugin_config.change2woman 
+        niuzi.sex = Sex.FEMALE
+        self.niuzi_dao.update(niuzi) 
 
-            await matcher.finish(
-                    msg.change_sex.success.format(plugin_config.change2woman)
-                    )
+        await matcher.finish(
+                msg.change_sex.success.format(plugin_config.change2woman)
+            )
 
 class GetCmd(BaseSubCmd):
     @override
@@ -183,17 +180,13 @@ class NameCmd(BaseSubCmd):
                 event: GroupMessage,
                 args: str
             ) -> None:
-        if len(args) == 0:
-            await matcher.finish(msg.no_arg)
-        
-        if len(args) > 10:
-            await matcher.finish(msg.name.name_too_long)
+        await checkCondition(matcher, len(args) == 0, msg.no_arg)
+        await checkCondition(matcher, len(args) > 10, msg.name.name_too_long)
 
         niuzi: Union[NiuZi, None] = self.niuzi_dao.findNiuziByQQ(
                 event.get_user_id()
                 )
-        if niuzi == None:
-            await matcher.finish(msg.no_niuzi)
+        await checkCondition(matcher, niuzi == None, msg.no_niuzi)
 
         niuzi.name = args 
         self.niuzi_dao.update(niuzi)
@@ -218,33 +211,27 @@ class PKCmd(BaseSubCmd):
             ) -> None:
         sender = event.get_user_id()
         niuzi: Union[NiuZi, None] = self.niuzi_dao.findNiuziByQQ(sender)
-        if niuzi == None:
-            await matcher.finish(msg.no_niuzi)
+
+        await checkCondition(matcher, niuzi==None, msg.no_niuzi)
 
         target = hasAT(event) 
-        if target == None:
-            await matcher.finish(msg.pk.no_args)
-
-        if sender == target:
-            await matcher.finish(msg.pk.same)
+        await checkCondition(matcher, target==None, msg.pk.no_args)
+        await checkCondition(matcher, sender==target, msg.pk.same)
 
         time: datetime.timedelta = self.__getCd(sender)
-        if time.seconds < plugin_config.pk_cd:
-            await matcher.finish(
+        await checkCondition(matcher, sender==target, 
                     msg.pk.source_in_cd.format(
                         plugin_config.pk_cd - time.seconds
                         )
                     )
 
-        target_niuzi: Union[NiuZi, None] = self. \
-                        niuzi_dao.findNiuziByQQ(target)
-        if target_niuzi == None:
-            await matcher.finish(msg.pk.target_no_niuzi)
+        target_niuzi = self.niuzi_dao.findNiuziByQQ(target)
+        await checkCondition(matcher,target_niuzi==None,msg.pk.target_no_niuzi)
 
         time: datetime.timedelta = self.__getCd(target)
-        if time.seconds < plugin_config.pk_cd:
-            await matcher.finish(
-                    msg.pk.target_in_cd.format(
+        await checkCondition(matcher, 
+                time.seconds < plugin_config.pk_cd, 
+                msg.pk.target_in_cd.format(
                         plugin_config.pk_cd - time.seconds
                     )
                 )
@@ -307,7 +294,6 @@ class TopCmd(BaseSubCmd):
                 [MessageSegment.plain(msg) for msg in res] 
             )
            
-
         await matcher.finish(MessageChain([MessageSegment.forward(
                         "",
                         int(get_bot().self_id),
@@ -318,7 +304,6 @@ class TopCmd(BaseSubCmd):
                     )
                 ])
             )
-
 
     async def getAll(self, group: int) -> Union[List[str], None]:
         niuzi_list = self.niuzi_dao.getAll()
@@ -448,11 +433,8 @@ class LoveRequestCmd(BaseSubCmd):
             await matcher.finish(msg.lover.get.has_lover)
 
         target = hasAT(event)
-        if target == None:
-            await matcher.finish(msg.lover.get.has_lover)
-
-        if target == sender:
-            await matcher.finish(msg.lover.get.self)
+        await checkCondition(matcher, target==None, msg.lover.get.has_lover)
+        await checkCondition(matcher, target==sender, msg.lover.get.self)
 
         if self.lovers_dao.findloversByQQ(target) != None:
             await matcher.finish(msg.lover.get.fail)
@@ -510,8 +492,7 @@ class DoiCmd(BaseSubCmd):
                 args: str
             ) -> None:
         lover = self.lovers_dao.findloversByQQ(event.get_user_id())
-        if lover == None:
-            await matcher.finish(msg.doi.no_lover)
+        await checkCondition(matcher, lover==None, msg.doi.no_lover)
 
         cd = plugin_config.doi_cd
         sender = self.__getCd(str(lover.qq)) 
@@ -607,7 +588,6 @@ class Admin(BaseSubCmd):
             await matcher.finish("<@target>?")
         await InfoCmd("").execute(matcher, stats, event, args)
         
-
     async def __changeLengthByAT(self, 
             matcher: Matcher, 
             stats: T_State, 
@@ -615,16 +595,13 @@ class Admin(BaseSubCmd):
             args: str
         ) -> None:
         at = hasAT(event)
-        if at == None:
-            await matcher.finish("<@target>?")
+        await checkCondition(matcher, at==None, "<@target>?")
         niuzi = self.niuzi_dao.findNiuziByQQ(
                     event.get_user_id()
                 )
 
-        if niuzi == None:
-            await matcher.finish(msg.info.no_niuzi)
-        if not self.is_num(args):
-            await matcher.finish("len must be digit")
+        await checkCondition(matcher, niuzi==None, msg.info.no_niuzi)
+        await checkCondition(matcher, not self.is_num(args), "len must be digit")
         niuzi.length = float(args)
         self.niuzi_dao.update(niuzi)
         await matcher.finish("success")

@@ -1,9 +1,10 @@
 
-from typing import Tuple, List, Union, Dict, Any
+from typing import NoReturn, Tuple, List, Union, Dict, Any
 from nonebot import get_bot
 from nonebot.adapters.mirai2.event import GroupMessage
 from nonebot.adapters.mirai2.message import MessageType
 from nonebot.internal.adapter.bot import Bot
+from nonebot.matcher import Matcher
 
 import pymysql
 import pymysql.cursors
@@ -79,3 +80,13 @@ def hasAT(event: GroupMessage) -> Union[str, None]:
             if seg['type'] == MessageType.AT:
                 return str(seg['target'])
         return None
+
+async def checkCondition(matcher: Matcher, condition: bool, msg: str) -> Union[NoReturn, None]:
+    """
+    条件检查器，用来解决一堆动不动就要判断条件来决定是否结束或继续执行的繁琐情况
+    条件不符合直接结束该事件处理, 并发送消息 
+    """
+    if condition:
+        await matcher.finish(msg)
+
+
