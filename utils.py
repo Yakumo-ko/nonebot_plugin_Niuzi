@@ -10,7 +10,7 @@ import pymysql.cursors
 from pymysql.cursors import Cursor, DictCursor
 from pymysql import Connection
 
-from .Sex import Sex
+from .enum import Sex
 
 
 class Sql:

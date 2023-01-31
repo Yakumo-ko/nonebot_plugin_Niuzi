@@ -7,11 +7,11 @@ from nonebot.adapters import Message
 
 from nonebot.adapters.mirai2.event import GroupMessage
 from nonebot.adapters.mirai2.message import MessageSegment, MessageChain
-from nonebot.rule import startswith
 from nonebot.typing import T_State
 from nonebot.matcher import Matcher
 
 import datetime
+import re
 
 from .utils import hasAT, member_profile, toChinese
 from .config import Config 
@@ -252,8 +252,14 @@ class PKCmd(BaseSubCmd):
         self.__updateCd(sender, target)
 
         pk_event = getPkevent()
+        member = await member_profile(event.sender.group.id, target_niuzi.qq)
         await matcher.finish(
-                pk_event().execute(niuzi, "none", target_niuzi, "none")         
+                pk_event().execute(
+                        niuzi, 
+                        event.sender.id, 
+                        target_niuzi, 
+                        member['nickname']
+                    )         
             )
 
     def __updateCd(self, sender: str, target: str) -> None:
@@ -580,11 +586,11 @@ class Admin(BaseSubCmd):
                         args.replace("get", "").strip()
                 )
         elif args.startswith("chlen"):
-            await self.__getNiuziByAT(
+            await self.__changeLengthByAT(
                         matcher, 
                         stats, 
                         event, 
-                        args.replace("get", "").strip()
+                        args.replace("chlen", "").strip()
                 )
         else:
             await matcher.finish(self.useage())
@@ -611,15 +617,17 @@ class Admin(BaseSubCmd):
         at = hasAT(event)
         if at == None:
             await matcher.finish("<@target>?")
-        niuzi: Union[NiuZi, None]= self.niuzi_dao.findNiuziByQQ(
+        niuzi = self.niuzi_dao.findNiuziByQQ(
                     event.get_user_id()
                 )
 
         if niuzi == None:
             await matcher.finish(msg.info.no_niuzi)
-        if not args.isdigit():
+        if not self.is_num(args):
             await matcher.finish("len must be digit")
-        niuzi.length = int(args)
+        niuzi.length = float(args)
         self.niuzi_dao.update(niuzi)
         await matcher.finish("success")
-
+    
+    def is_num(self, num: str) -> bool:
+        return re.match("-|[\d]+\.[\d]{1,}", num) != None
