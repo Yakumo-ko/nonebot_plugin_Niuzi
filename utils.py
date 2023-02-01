@@ -115,4 +115,3 @@ def toNode(msg: str, id: int, nickname: str) -> dict:
             "senderName": nickname, 
             "messageChain": [MessageSegment.plain(msg)]
         }
-

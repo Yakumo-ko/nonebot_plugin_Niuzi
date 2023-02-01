@@ -18,7 +18,7 @@ setting = {
 
     "get": {
         "has_niuzi": "你有了你还领, 有病",   
-        "success": "领养了，输入「{subcmd}」查看你的牛子信息"
+        "success": "领养了，可输入相关命令查看你的牛子信息"
         },
 
     "name": {
