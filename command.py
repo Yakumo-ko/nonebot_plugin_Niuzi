@@ -45,16 +45,12 @@ async def info (
     args = text.split(' ')
 
     for item in subcmds.items():
-        if args[0] == item[0] :
+        if args[0] == item[0]:
             args = text.replace(args[0], '').strip()
             cmd: BaseSubCmd = item[1](item[0])
-            try:
-                await cmd.execute(matcher, stats, event, args)
-            except Exception as e:
-                print(e.with_traceback(None))
-                await matcher.finish("未知错误, 该命令不可用")
+            return await cmd.execute(matcher, stats, event, args)
 
-    await listSubCmd(matcher, event.sender.group.id)
+    return await listSubCmd(matcher, event.sender.group.id)
 
 # TODO: set a vaild datetime for session
 @matcher.permission_updater
@@ -87,7 +83,3 @@ async def listSubCmd(matcher: Matcher, group: int) -> None:
             )
         )
     
-
-
-    
-

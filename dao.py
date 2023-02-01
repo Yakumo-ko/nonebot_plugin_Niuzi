@@ -1,4 +1,5 @@
 from typing import Union, Dict, Tuple, List, Any
+import datetime
 
 from nonebot import get_driver
 from .config import Config
@@ -30,7 +31,7 @@ class LoversDAO:
 
         self.sql.executeNotQuerySql(self.__CREAT_LOVERS)
 
-    def findloversByQQ(self, qq: str) -> Union[Lovers, None]:
+    def findloversByQQ(self, qq: Union[int, str]) -> Union[Lovers, None]:
         sql: str = "select * from `{tb_name}` where `qq`='{qq}' or `target`='{qq}'".format(
                     tb_name = self.__LOVERS,
                     qq = qq
@@ -77,7 +78,7 @@ class LoversDAO:
 
         return self.sql.executeNotQuerySql(sql)
 
-    def deleteByQQ(self, qq: str) -> bool:
+    def deleteByQQ(self, qq: Union[int, str]) -> bool:
         sql: str = "DELETE  FROM `{table_name}` WHERE `qq`= {qq}".format(
                     qq = qq,
                     table_name =  self.__LOVERS
@@ -114,7 +115,7 @@ class NiuziDAO:
 
         self.sql.executeNotQuerySql(self.__CREAT_NIUZI_INFO)
 
-    def findNiuziByQQ(self, qq: str) -> Union[NiuZi, None]:
+    def findNiuziByQQ(self, qq: Union[int, str]) -> Union[NiuZi, None]:
         sql: str = "select * from `{tb_name}` where `qq`='{qq}'".format(
                     tb_name = self.__NIUZI_INFO,
                     qq = qq
@@ -179,7 +180,7 @@ class CoolDownDAO:
 
     __CREAT_COOLDOWN = """\
             CREATE TABLE IF NOT EXISTS `{table_name}` (
-                `qq` BIGINT UNIQUE NOT NULL,`timestampe` BIGINT, `type` INT NOT NULL     
+                `qq` BIGINT NOT NULL,`timestampe` BIGINT, `type` INT NOT NULL     
             )
             """.format(table_name = __TB_COOLDOWN)
 
@@ -194,7 +195,7 @@ class CoolDownDAO:
 
         self.sql.executeNotQuerySql(self.__CREAT_COOLDOWN)
 
-    def findCoolDownByQQ(self, qq: str, type: int) -> Union[CoolDown, None]:
+    def findCoolDownByQQ(self, qq: Union[int, str], type: int) -> Union[CoolDown, None]:
         sql: str = "select * from `{tb_name}` where `qq`='{qq}' and `type` = '{type}'".format(
                 tb_name = self.__TB_COOLDOWN,
                 type = type,
@@ -217,7 +218,7 @@ class CoolDownDAO:
 
         return self.sql.executeNotQuerySql(sql)
 
-    def deleteByQQ(self, qq: str, type: int) -> bool:
+    def deleteByQQ(self, qq: Union[int, str], type: int) -> bool:
         sql: str = "DELETE  FROM `{table_name}` WHERE `qq`= {qq} and `type`={type}".format(
                     qq = qq,
                     type = type,
@@ -225,4 +226,30 @@ class CoolDownDAO:
                 )
 
         return self.sql.executeNotQuerySql(sql)
+
+    def updateCd(self, 
+            sender: Union[str, int], 
+            target: Union[str, int],
+            type: int
+         ) -> None:
+        self.deleteByQQ(sender, type)
+        self.deleteByQQ(target, type)
+        self.insert(CoolDown.parse_obj({
+                "qq": int(sender),
+                "timestampe": int(datetime.datetime.now().timestamp()),
+                "type": type 
+            }))
+
+        self.insert(CoolDown.parse_obj({
+                "qq": target,
+                "timestampe": int(datetime.datetime.now().timestamp()),
+                "type": type 
+            }))
+    
+    def getCd(self, qq: Union[str, int], type: int) -> datetime.timedelta:
+        cool_down = self.findCoolDownByQQ(qq, type)
+        if cool_down == None:
+            return datetime.timedelta(seconds=99999999)
+        old = datetime.datetime.fromtimestamp(cool_down.timestampe)
+        return datetime.datetime.now() - old
 

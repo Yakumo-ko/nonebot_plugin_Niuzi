@@ -69,20 +69,32 @@ async def member_profile(group: int, member: int) -> Union[dict, None]:
     """
 
     bot: Bot  = get_bot()
+    if member == int(bot.self_id):
+        return await bot.member_profile(target=group, member_id=member)
+
     members = await bot.member_list(target = group)
     for mem in members['data']:
         if member == mem['id']:
             return await bot.member_profile(target=group, member_id=member)
     return None
 
+async def getNickName(group: int, member: int) -> str:
+    """
+    获取指定群的某个群成员的昵称, 若此成员不在该群返回"none"
+    """
+    member_info = await member_profile(group, member)
+    return member_info['nickname'] if member_info != None else "none"
+
 def toChinese(sex: int) -> str:
     return '女' if sex == Sex.FEMALE else '男'
 
 def hasAT(event: GroupMessage) -> Union[str, None]:
-        for seg in event.get_message().export():
-            if seg['type'] == MessageType.AT:
-                return str(seg['target'])
-        return None
+    for seg in event.get_message().export():
+        if seg['type'] == MessageType.AT:
+            return str(seg['target'])
+    if event.to_me:
+        return get_bot().self_id
+    return None
 
 async def checkCondition(matcher: Matcher, condition: bool, msg: str) -> Union[NoReturn, None]:
     """
@@ -91,6 +103,7 @@ async def checkCondition(matcher: Matcher, condition: bool, msg: str) -> Union[N
     """
     if condition:
         await matcher.finish(msg)
+    return None
 
 def toNode(msg: str, id: int, nickname: str) -> dict:
     """
@@ -102,6 +115,4 @@ def toNode(msg: str, id: int, nickname: str) -> dict:
             "senderName": nickname, 
             "messageChain": [MessageSegment.plain(msg)]
         }
-
-
 

@@ -100,7 +100,7 @@ pk_event = [
             PKAllLost
         ]
 
-def getPkevent() -> object:
+def randomPkevent() -> object:
     return random.choice(pk_event)
 
 

@@ -59,8 +59,8 @@ setting = {
 
         "request": {
           "send": "{target} 你好，{sender}想跟你搞对象\n输入命令「{subcmd}」",
-          "agree": "{sender} 恭喜！！！！对方同意了你的请求",
-          "disagree": "{sender} 真遗憾……对方没有同意你的请求",
+          "agree": "{0} 恭喜！！！！对方同意了你的请求",
+          "disagree": "{0} 真遗憾……对方没有同意你的请求",
           "exists": "已存在请求，可能是别人发的"
             } 
         },
@@ -79,7 +79,7 @@ setting = {
 
       "doi":{
         "no_lover": "贴你ma 你都没人跟你贴",
-        "success": "行行行 贴贴贴 一会儿粘上了😅 加了 {length} 厘米，{msg} {second} 后才可以再次贴贴",
+        "success": "行行行 贴贴贴 一会儿粘上了😅 加了 {length} 厘米，{msg} {second} 秒后才可以再次贴贴",
         "fail": "你俩能不能消停会儿 都粘掉皮了😅 等 {0} 秒再贴"
         },
 
